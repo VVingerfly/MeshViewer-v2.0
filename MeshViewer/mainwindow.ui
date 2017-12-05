@@ -1,0 +1,763 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindowClass</class>
+ <widget class="QMainWindow" name="MainWindowClass">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>830</width>
+    <height>568</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>830</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionLoadTexture"/>
+    <addaction name="actionSave"/>
+    <addaction name="separator"/>
+    <addaction name="actionSaveScreen"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionHidden"/>
+    <addaction name="actionPointSet"/>
+    <addaction name="actionWireFrame"/>
+    <addaction name="actionHiddenLines"/>
+    <addaction name="actionFlatLines"/>
+    <addaction name="actionSolidFlat"/>
+    <addaction name="actionSolidSmooth"/>
+    <addaction name="separator"/>
+    <addaction name="actionBBox"/>
+    <addaction name="actionAxis"/>
+    <addaction name="actionTexture"/>
+    <addaction name="actionBoundary"/>
+    <addaction name="separator"/>
+    <addaction name="actionMeshInfo"/>
+    <addaction name="actionResetArcBall"/>
+   </widget>
+   <widget class="QMenu" name="menuTool">
+    <property name="title">
+     <string>Selection</string>
+    </property>
+    <widget class="QMenu" name="menuFind">
+     <property name="baseSize">
+      <size>
+       <width>2</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>Find</string>
+     </property>
+     <property name="icon">
+      <iconset resource="mainwindow.qrc">
+       <normaloff>:/images/Resources/images/search.png</normaloff>:/images/Resources/images/search.png</iconset>
+     </property>
+     <addaction name="actionFindPoint"/>
+     <addaction name="actionFindVert"/>
+     <addaction name="actionFindEdge"/>
+     <addaction name="actionFindFace"/>
+    </widget>
+    <widget class="QMenu" name="menu">
+     <property name="title">
+      <string>Save</string>
+     </property>
+     <property name="icon">
+      <iconset resource="mainwindow.qrc">
+       <normaloff>:/images/Resources/images/saveSelection.png</normaloff>:/images/Resources/images/saveSelection.png</iconset>
+     </property>
+     <addaction name="actionSaveSelectedVert"/>
+     <addaction name="actionSaveSelectedEdge"/>
+     <addaction name="actionSaveSelectedFace"/>
+    </widget>
+    <widget class="QMenu" name="menuPick">
+     <property name="title">
+      <string>Pick</string>
+     </property>
+     <property name="icon">
+      <iconset resource="mainwindow.qrc">
+       <normaloff>:/images/Resources/images/hand_up_pointing.png</normaloff>:/images/Resources/images/hand_up_pointing.png</iconset>
+     </property>
+     <addaction name="actionPickVert"/>
+     <addaction name="actionPickEdge"/>
+     <addaction name="actionPickFace"/>
+    </widget>
+    <widget class="QMenu" name="menuClear">
+     <property name="title">
+      <string>Clear</string>
+     </property>
+     <property name="icon">
+      <iconset resource="mainwindow.qrc">
+       <normaloff>:/images/Resources/images/broom.png</normaloff>:/images/Resources/images/broom.png</iconset>
+     </property>
+     <addaction name="actionClearSelectedVert"/>
+     <addaction name="actionClearSelectedEdge"/>
+     <addaction name="actionClearSelectedFace"/>
+     <addaction name="actionClearSelectedAll"/>
+    </widget>
+    <widget class="QMenu" name="menuShow">
+     <property name="title">
+      <string>Show</string>
+     </property>
+     <property name="icon">
+      <iconset resource="mainwindow.qrc">
+       <normaloff>:/images/Resources/images/eye.png</normaloff>:/images/Resources/images/eye.png</iconset>
+     </property>
+     <addaction name="actionShowSelectedVert"/>
+     <addaction name="actionShowSelectedEdge"/>
+     <addaction name="actionShowSelectedFace"/>
+    </widget>
+    <widget class="QMenu" name="menuTag">
+     <property name="title">
+      <string>Tag</string>
+     </property>
+     <property name="icon">
+      <iconset resource="mainwindow.qrc">
+       <normaloff>:/images/Resources/images/tag.png</normaloff>:/images/Resources/images/tag.png</iconset>
+     </property>
+     <addaction name="actionTagSelectedVert"/>
+     <addaction name="actionTagSelectedEdge"/>
+     <addaction name="actionTagSelectedFace"/>
+    </widget>
+    <addaction name="actionResetSelection"/>
+    <addaction name="menuPick"/>
+    <addaction name="menuFind"/>
+    <addaction name="menuShow"/>
+    <addaction name="menuTag"/>
+    <addaction name="menu"/>
+    <addaction name="menuClear"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuView"/>
+   <addaction name="menuTool"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QToolBar" name="toolBarFile">
+   <property name="windowTitle">
+    <string>toolBarFile</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionOpen"/>
+   <addaction name="actionSave"/>
+   <addaction name="actionSaveScreen"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QToolBar" name="toolBarMeshRenderMode">
+   <property name="windowTitle">
+    <string>toolBarRender</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionHidden"/>
+   <addaction name="actionPointSet"/>
+   <addaction name="actionWireFrame"/>
+   <addaction name="actionHiddenLines"/>
+   <addaction name="actionFlatLines"/>
+   <addaction name="actionSolidFlat"/>
+   <addaction name="actionSolidSmooth"/>
+  </widget>
+  <widget class="QToolBar" name="toolBarSelection">
+   <property name="windowTitle">
+    <string>toolBarSelection</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionResetSelection"/>
+   <addaction name="actionFindPoint"/>
+   <addaction name="actionFindVert"/>
+   <addaction name="actionFindEdge"/>
+   <addaction name="actionFindFace"/>
+   <addaction name="actionPickVert"/>
+   <addaction name="actionPickEdge"/>
+   <addaction name="actionPickFace"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidgetCommand">
+   <property name="windowTitle">
+    <string>Command</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <widget class="QPushButton" name="pushButton">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>20</y>
+       <width>75</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PushButton</string>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/open.png</normaloff>:/images/Resources/images/open.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Open</string>
+   </property>
+   <property name="statusTip">
+    <string>Load a triangular mesh</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/save.png</normaloff>:/images/Resources/images/save.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+   <property name="statusTip">
+    <string>Save current mesh</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionWireFrame">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshWirFramee.png</normaloff>:/images/Resources/images/meshWirFramee.png</iconset>
+   </property>
+   <property name="text">
+    <string>WireFrame</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw wireframe</string>
+   </property>
+  </action>
+  <action name="actionPointSet">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshPointSet.png</normaloff>:/images/Resources/images/meshPointSet.png</iconset>
+   </property>
+   <property name="text">
+    <string>PointSet</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw point set</string>
+   </property>
+  </action>
+  <action name="actionHiddenLines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshHiddenLines.png</normaloff>:/images/Resources/images/meshHiddenLines.png</iconset>
+   </property>
+   <property name="text">
+    <string>HiddenLines</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw hiddenlines</string>
+   </property>
+  </action>
+  <action name="actionSolidFlat">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshSolidFlat.png</normaloff>:/images/Resources/images/meshSolidFlat.png</iconset>
+   </property>
+   <property name="text">
+    <string>SolidFlat</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw solid flat</string>
+   </property>
+  </action>
+  <action name="actionSolidSmooth">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshSolidSmooth.png</normaloff>:/images/Resources/images/meshSolidSmooth.png</iconset>
+   </property>
+   <property name="text">
+    <string>SolidSmooth</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw solid smooth</string>
+   </property>
+  </action>
+  <action name="actionFlatLines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshFlatLines.png</normaloff>:/images/Resources/images/meshFlatLines.png</iconset>
+   </property>
+   <property name="text">
+    <string>FlatLines</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw flatlines</string>
+   </property>
+  </action>
+  <action name="actionBBox">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshBBox.png</normaloff>:/images/Resources/images/meshBBox.png</iconset>
+   </property>
+   <property name="text">
+    <string>BBox</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw mesh bounding box</string>
+   </property>
+  </action>
+  <action name="actionAxis">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/axis.png</normaloff>:/images/Resources/images/axis.png</iconset>
+   </property>
+   <property name="text">
+    <string>Axis</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw XYZ axes in world coordinates</string>
+   </property>
+  </action>
+  <action name="actionTexture">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/texture.png</normaloff>:/images/Resources/images/texture.png</iconset>
+   </property>
+   <property name="text">
+    <string>Texture</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw mesh texture</string>
+   </property>
+  </action>
+  <action name="actionFindVert">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/selectVerticesFind.png</normaloff>:/images/Resources/images/selectVerticesFind.png</iconset>
+   </property>
+   <property name="text">
+    <string>FindVert</string>
+   </property>
+   <property name="statusTip">
+    <string>Find a vertex by given index</string>
+   </property>
+  </action>
+  <action name="actionFindFace">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/selectFacesFind.png</normaloff>:/images/Resources/images/selectFacesFind.png</iconset>
+   </property>
+   <property name="text">
+    <string>FindFace</string>
+   </property>
+   <property name="statusTip">
+    <string>Find a face by given index</string>
+   </property>
+  </action>
+  <action name="actionFindEdge">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/selectEdgesFind.png</normaloff>:/images/Resources/images/selectEdgesFind.png</iconset>
+   </property>
+   <property name="text">
+    <string>FindEdge</string>
+   </property>
+   <property name="statusTip">
+    <string>Find an edge by given index</string>
+   </property>
+  </action>
+  <action name="actionPickVert">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/selectVerticesClick.png</normaloff>:/images/Resources/images/selectVerticesClick.png</iconset>
+   </property>
+   <property name="text">
+    <string>PickVert</string>
+   </property>
+   <property name="statusTip">
+    <string>Pick a vertex by a single click</string>
+   </property>
+  </action>
+  <action name="actionPickEdge">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/selectEdgesClick.png</normaloff>:/images/Resources/images/selectEdgesClick.png</iconset>
+   </property>
+   <property name="text">
+    <string>PickEdge</string>
+   </property>
+   <property name="statusTip">
+    <string>Pick an edge by a single click</string>
+   </property>
+  </action>
+  <action name="actionPickFace">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/selectFacesClick.png</normaloff>:/images/Resources/images/selectFacesClick.png</iconset>
+   </property>
+   <property name="text">
+    <string>PickFace</string>
+   </property>
+   <property name="statusTip">
+    <string>Pick a face by a single click</string>
+   </property>
+  </action>
+  <action name="actionSaveSelectedVert">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/saveSelectedVertices.png</normaloff>:/images/Resources/images/saveSelectedVertices.png</iconset>
+   </property>
+   <property name="text">
+    <string>SaveSelectedVert</string>
+   </property>
+   <property name="statusTip">
+    <string>Save current selected vertices to file</string>
+   </property>
+  </action>
+  <action name="actionSaveSelectedEdge">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/saveSelectedEdges.png</normaloff>:/images/Resources/images/saveSelectedEdges.png</iconset>
+   </property>
+   <property name="text">
+    <string>SaveSelectedEdge</string>
+   </property>
+   <property name="statusTip">
+    <string>Save current selected edges to file</string>
+   </property>
+  </action>
+  <action name="actionSaveSelectedFace">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/saveSelectedFaces.png</normaloff>:/images/Resources/images/saveSelectedFaces.png</iconset>
+   </property>
+   <property name="text">
+    <string>SaveSelectedFace</string>
+   </property>
+   <property name="statusTip">
+    <string>Save current selected faces to file</string>
+   </property>
+  </action>
+  <action name="actionFindPoint">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/search.png</normaloff>:/images/Resources/images/search.png</iconset>
+   </property>
+   <property name="text">
+    <string>FindPoint</string>
+   </property>
+   <property name="statusTip">
+    <string>Find the closest vertex to a given 3D point</string>
+   </property>
+  </action>
+  <action name="actionClearSelectedVert">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/clearSelectedVertices.png</normaloff>:/images/Resources/images/clearSelectedVertices.png</iconset>
+   </property>
+   <property name="text">
+    <string>ClearSelectedVert</string>
+   </property>
+   <property name="statusTip">
+    <string>Clear current selected vertices</string>
+   </property>
+  </action>
+  <action name="actionClearSelectedEdge">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/clearSelectedEdges.png</normaloff>:/images/Resources/images/clearSelectedEdges.png</iconset>
+   </property>
+   <property name="text">
+    <string>ClearSelectedEdge</string>
+   </property>
+   <property name="statusTip">
+    <string>Clear current selected edges</string>
+   </property>
+  </action>
+  <action name="actionClearSelectedFace">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/clearSelectedFaces.png</normaloff>:/images/Resources/images/clearSelectedFaces.png</iconset>
+   </property>
+   <property name="text">
+    <string>ClearSelectedFace</string>
+   </property>
+   <property name="statusTip">
+    <string>Clear current selected faces</string>
+   </property>
+  </action>
+  <action name="actionClearSelectedAll">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/clearSelection.png</normaloff>:/images/Resources/images/clearSelection.png</iconset>
+   </property>
+   <property name="text">
+    <string>ClearSelectedAll</string>
+   </property>
+   <property name="statusTip">
+    <string>Clear current selected vertices, edges and faces</string>
+   </property>
+  </action>
+  <action name="actionBoundary">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/meshBoundary.png</normaloff>:/images/Resources/images/meshBoundary.png</iconset>
+   </property>
+   <property name="text">
+    <string>Boundary</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw mesh boundary</string>
+   </property>
+  </action>
+  <action name="actionMeshInfo">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/info.png</normaloff>:/images/Resources/images/info.png</iconset>
+   </property>
+   <property name="text">
+    <string>MeshInfo</string>
+   </property>
+   <property name="statusTip">
+    <string>Show mesh information</string>
+   </property>
+  </action>
+  <action name="actionShowSelectedVert">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowVert</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw current selected vertices or not</string>
+   </property>
+  </action>
+  <action name="actionShowSelectedEdge">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowEdge</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw current selected edges or not</string>
+   </property>
+  </action>
+  <action name="actionShowSelectedFace">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowFace</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw current selected faces or not</string>
+   </property>
+  </action>
+  <action name="actionResetSelection">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/cursor.png</normaloff>:/images/Resources/images/cursor.png</iconset>
+   </property>
+   <property name="text">
+    <string>Reset</string>
+   </property>
+   <property name="statusTip">
+    <string>Reset selection mode</string>
+   </property>
+   <property name="whatsThis">
+    <string/>
+   </property>
+  </action>
+  <action name="actionTagSelectedVert">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>TagVert</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw current selected vertex tags</string>
+   </property>
+  </action>
+  <action name="actionTagSelectedEdge">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>TagEdge</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw current selected edge tags</string>
+   </property>
+  </action>
+  <action name="actionTagSelectedFace">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>TagFace</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw current selected face tags</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="statusTip">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionSaveScreen">
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/saveScreen.png</normaloff>:/images/Resources/images/saveScreen.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save Screen</string>
+   </property>
+   <property name="statusTip">
+    <string>Save Screen</string>
+   </property>
+  </action>
+  <action name="actionHidden">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/eye_invisible.png</normaloff>:/images/Resources/images/eye_invisible.png</iconset>
+   </property>
+   <property name="text">
+    <string>Hidden</string>
+   </property>
+   <property name="statusTip">
+    <string>Hide current mesh</string>
+   </property>
+  </action>
+  <action name="actionLoadTexture">
+   <property name="text">
+    <string>Load Texture</string>
+   </property>
+   <property name="statusTip">
+    <string>Load a texture image</string>
+   </property>
+  </action>
+  <action name="actionResetArcBall">
+   <property name="text">
+    <string>Reset ArcBall</string>
+   </property>
+   <property name="statusTip">
+    <string>Reset ArcBall</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources>
+  <include location="mainwindow.qrc"/>
+ </resources>
+ <connections/>
+</ui>

@@ -1,0 +1,44 @@
+<RCC>
+  <qresource prefix="MainWindow"/>
+  <qresource prefix="images">
+    <file>Resources/images/eye_invisible.png</file>
+    <file>Resources/images/saveScreen.png</file>
+    <file>Resources/images/broom.png</file>
+    <file>Resources/images/hand_up_pointing.png</file>
+    <file>Resources/images/eye.png</file>
+    <file>Resources/images/tag.png</file>
+    <file>Resources/images/clearSelection.png</file>
+    <file>Resources/images/saveSelection.png</file>
+    <file>Resources/images/clearSelectedEdges.png</file>
+    <file>Resources/images/clearSelectedFaces.png</file>
+    <file>Resources/images/clearSelectedVertices.png</file>
+    <file>Resources/images/saveSelectedEdges.png</file>
+    <file>Resources/images/saveSelectedFaces.png</file>
+    <file>Resources/images/saveSelectedVertices.png</file>
+    <file>Resources/images/selectEdgesClick.png</file>
+    <file>Resources/images/cursor.png</file>
+    <file>Resources/images/selectEdgesFind.png</file>
+    <file>Resources/images/selectFacesClick.png</file>
+    <file>Resources/images/selectFacesFind.png</file>
+    <file>Resources/images/selectVerticesClick.png</file>
+    <file>Resources/images/selectVerticesFind.png</file>
+    <file>Resources/images/info.png</file>
+    <file>Resources/images/search.png</file>
+    <file>Resources/images/selected.png</file>
+    <file>Resources/images/selected_edge.png</file>
+    <file>Resources/images/selected_face.png</file>
+    <file>Resources/images/selected_vert.png</file>
+    <file>Resources/images/texture.png</file>
+    <file>Resources/images/axis.png</file>
+    <file>Resources/images/meshBBox.png</file>
+    <file>Resources/images/meshBoundary.png</file>
+    <file>Resources/images/open.png</file>
+    <file>Resources/images/meshFlatLines.png</file>
+    <file>Resources/images/meshHiddenLines.png</file>
+    <file>Resources/images/meshPointSet.png</file>
+    <file>Resources/images/meshSolidFlat.png</file>
+    <file>Resources/images/meshSolidSmooth.png</file>
+    <file>Resources/images/meshWirFramee.png</file>
+    <file>Resources/images/save.png</file>
+  </qresource>
+</RCC>
