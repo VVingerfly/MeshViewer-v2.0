@@ -28,7 +28,7 @@
 #define max(a,b) a>b?a:b
 
 MeshViewer::MeshViewer(QWidget *parent, MainWindow* mainwindow)
-	: QGLWidget(parent), ptr_mainwindow_(mainwindow), eye_distance_(5.0),
+	: QGLWidget(parent), ptr_mainwindow_(mainwindow),
 	is_load_mesh_(false), is_load_texture_(false), 
 	is_draw_axes_(false), is_draw_bbox_(false), is_draw_boundary_(false), is_draw_texture_(false)
 {
@@ -39,10 +39,7 @@ MeshViewer::MeshViewer(QWidget *parent, MainWindow* mainwindow)
 	bbox_max_		= OpenMesh::Vec3d(1.0, 1.0, 1.0);
 
 
-	eye_goal_[0] = eye_goal_[1] = 0.0;
-	eye_goal_[2] = 0.0;
-	eye_direction_[0] = eye_direction_[1] = 0.0;
-	eye_direction_[2] = 1.0;
+	
 
 	mesh_select_mode_	= SELECT_NONE;
 	mouse_mode_			= MOUSE_NAVIGATE_MESH;
@@ -90,18 +87,14 @@ void MeshViewer::initializeGL()
 	// Material
 	setDefaultMaterial();
 	// Lighting
-	glLoadIdentity();
 	setDefaultLight();
+	// Angle of View
+	setDefaultViewAngle();
 	
 	// scene pos and size
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	//glGetDoublev(GL_MODELVIEW_MATRIX, modelview_matrix_);
 
-	//for initialize all the viewports
-	///glGetDoublev(GL_MODELVIEW_MATRIX, &ModelViewMatrix[0]);
-
-	///set_scene_pos(OpenMesh::Vec3d(0.0, 0.0, 0.0), 1.0);
 	//logI("initialize OpenGL done.\n");
 }
 
@@ -248,6 +241,7 @@ void MeshViewer::mouseReleaseEvent(QMouseEvent *e)
 	default:
 		break;
 	}
+	updateGL();
 }
 void MeshViewer::wheelEvent(QWheelEvent *e)
 {
@@ -265,6 +259,7 @@ void MeshViewer::keyPressEvent(QKeyEvent *e)
 	default:
 		break;
 	}
+	updateGL();
 }
 void MeshViewer::keyReleaseEvent(QKeyEvent *e)
 {
@@ -275,6 +270,7 @@ void MeshViewer::keyReleaseEvent(QKeyEvent *e)
 	default:
 		break;
 	}
+	updateGL();
 }
 
 void MeshViewer::dragEnterEvent(QDragEnterEvent* event)
@@ -283,6 +279,7 @@ void MeshViewer::dragEnterEvent(QDragEnterEvent* event)
 	{
 		event->acceptProposedAction();
 	}
+	updateGL();
 }
 void MeshViewer::dropEvent(QDropEvent* event)
 {
@@ -305,6 +302,7 @@ void MeshViewer::dropEvent(QDropEvent* event)
 	{
 		QMessageBox::warning(this, "Error", "Unsupported mesh or texture image file");
 	}
+	updateGL();
 }
 void MeshViewer::setDefaultLight()
 {
@@ -389,6 +387,18 @@ void MeshViewer::setDefaultMaterial()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shine);
 	//glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
 }
+
+void MeshViewer::setDefaultViewAngle()
+{
+	eye_distance_ = 5.0;
+	eye_goal_[0] = 0.0;
+	eye_goal_[1] = 0.0;
+	eye_goal_[2] = 1.0;
+	eye_direction_[0] = 0.0;
+	eye_direction_[1] = 0.0;
+	eye_direction_[2] = 1.0;
+}
+
 void MeshViewer::setBackground()
 {
 	QColor color = QColorDialog::getColor(Qt::white, this, tr("background color"));
@@ -1386,6 +1396,7 @@ void MeshViewer::saveScreen()
 void MeshViewer::resetArcBall()
 {
 	ptr_arcball_->InitBall();
+	setDefaultViewAngle();
 	updateGL();
 }
 

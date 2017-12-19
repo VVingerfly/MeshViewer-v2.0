@@ -143,7 +143,7 @@ private:
 	void render();
 	void setDefaultLight();
 	void setDefaultMaterial();
-
+	void setDefaultViewAngle();
 public:
 	void renderTextStr(int x, int y, const QString& str)
 	{

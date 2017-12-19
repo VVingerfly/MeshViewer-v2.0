@@ -99,7 +99,6 @@ private: // functions
 public:
 	float * GetInvertedBallMatrix();
 	void InitBall();
-
 private:
      void MouseMove(int px, int py, int nWinWidth, int nWinHeight);
       void MouseDown(int px, int py, int nWinWidth, int nWinHeight);
