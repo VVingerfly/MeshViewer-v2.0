@@ -15,12 +15,9 @@
 #include <QKeyEvent>
 #include <QColorDialog>
 #include <QFileDialog>
-#include <QTextCodec>
-
 
 #include "mainwindow.h"
 #include "ArcBall.h"
-#include "globalFunctions.h"
 #include "ui_SaveSelection.h"
 
 #define SWAP(a,b,T) {T tmp=(a); (a)=(b); (b)=tmp;}
@@ -28,22 +25,16 @@
 #define max(a,b) a>b?a:b
 
 MeshViewer::MeshViewer(QWidget *parent, MainWindow* mainwindow)
-	: QGLWidget(parent), ptr_mainwindow_(mainwindow),
-	is_load_mesh_(false), is_load_texture_(false), 
-	is_draw_axes_(false), is_draw_bbox_(false), is_draw_boundary_(false), is_draw_texture_(false)
+	: QGLWidget(parent), ptr_mainwindow_(mainwindow)
 {
 	ptr_arcball_	= new CArcBall(width(), height());
-	ptr_mesh_		= new MyMesh;
-	ptr_selector_   = new MeshSelector;
-	bbox_min_		= OpenMesh::Vec3d(-1.0, -1.0, -1.0);
-	bbox_max_		= OpenMesh::Vec3d(1.0, 1.0, 1.0);
+	ptr_source_model_ = new Model;
+	ptr_target_model_ = new Model;
 
-
-	
-
+	active_mesh_ = SOURCE_ACTIVE;
 	mesh_select_mode_	= SELECT_NONE;
 	mouse_mode_			= MOUSE_NAVIGATE_MESH;
-	mesh_render_mode_	= MESH_FLAT_LINES;
+	//mesh_render_mode_	= MESH_FLAT_LINES;
 	//setFormat(QGLFormat(QGL::SampleBuffers));
 
 	setAcceptDrops(true);
@@ -52,7 +43,8 @@ MeshViewer::MeshViewer(QWidget *parent, MainWindow* mainwindow)
 MeshViewer::~MeshViewer()
 {
 	SafeDelete(ptr_arcball_);
-	SafeDelete(ptr_mesh_);
+	SafeDelete(ptr_source_model_);
+	SafeDelete(ptr_target_model_);
 }
 
 #if 0
@@ -159,27 +151,12 @@ void MeshViewer::mousePressEvent(QMouseEvent *e)
 		else if (mouse_mode_ == MOUSE_SELECT_MODE)
 		{
 			getSelectedPoint(e->x(), e->y());
-			switch (mesh_select_mode_)
-			{
-			case SELECT_NONE:
-				break;
-			case SELECT_VERTEX:
-				ptr_selector_->pickVert(selected_point_);
-				break;
-			case SELECT_EDGE:
-				ptr_selector_->pickEdge(selected_point_);
-				break;
-			case SELECT_FACE:
-				ptr_selector_->pickFace(selected_point_);
-				break;
-			default:
-				break;
-			}
+			pickMeshElem();
 		}
 
 		break;
 	case Qt::MidButton:
-		current_position_ = e->pos();
+		current_2d_position_ = e->pos();
 		break;
 	default:
 		break;
@@ -202,9 +179,9 @@ void MeshViewer::mouseMoveEvent(QMouseEvent *e)
 	case Qt::MidButton:
 		if (mouse_mode_ == MOUSE_NAVIGATE_MESH)
 		{
-			eye_goal_[0] -= 4.0*GLfloat(e->x() - current_position_.x()) / GLfloat(width());
-			eye_goal_[1] += 4.0*GLfloat(e->y() - current_position_.y()) / GLfloat(height());
-			current_position_ = e->pos();
+			eye_goal_[0] -= 4.0*GLfloat(e->x() - current_2d_position_.x()) / GLfloat(width());
+			eye_goal_[1] += 4.0*GLfloat(e->y() - current_2d_position_.y()) / GLfloat(height());
+			current_2d_position_ = e->pos();
 		}
 
 		break;
@@ -292,11 +269,24 @@ void MeshViewer::dropEvent(QDropEvent* event)
 
 	if (fileName.endsWith(".off") || fileName.endsWith(".obj") || fileName.endsWith(".stl") || fileName.endsWith(".ply"))
 	{
-		loadMesh(fileName);
+		bool flag = false;
+		if (active_mesh_ == SOURCE_ACTIVE)
+			flag = ptr_source_model_->loadMesh(fileName);
+		else if (active_mesh_ == TARGET_ACTIVE)
+			flag = ptr_target_model_->loadMesh(fileName);
+		else
+			flag = false;
+		
 	}
 	else if (fileName.endsWith(".jpg") || fileName.endsWith(".png") || fileName.endsWith(".bmp"))
 	{
-		loadTexture(fileName);
+		bool flag = false;
+		if (active_mesh_ == SOURCE_ACTIVE)
+			flag = ptr_source_model_->loadTexture(fileName);
+		else if (active_mesh_ == TARGET_ACTIVE)
+			flag = ptr_target_model_->loadTexture(fileName);
+		else
+			flag = false;
 	}
 	else
 	{
@@ -304,6 +294,7 @@ void MeshViewer::dropEvent(QDropEvent* event)
 	}
 	updateGL();
 }
+
 void MeshViewer::setDefaultLight()
 {
 #if 1
@@ -387,7 +378,6 @@ void MeshViewer::setDefaultMaterial()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shine);
 	//glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
 }
-
 void MeshViewer::setDefaultViewAngle()
 {
 	eye_distance_ = 5.0;
@@ -398,7 +388,6 @@ void MeshViewer::setDefaultViewAngle()
 	eye_direction_[1] = 0.0;
 	eye_direction_[2] = 1.0;
 }
-
 void MeshViewer::setBackground()
 {
 	QColor color = QColorDialog::getColor(Qt::white, this, tr("background color"));
@@ -410,52 +399,85 @@ void MeshViewer::setBackground()
 	updateGL();
 }
 
+
+void MeshViewer::setDrawSourceMesh(bool bv)
+{
+	is_draw_source_mesh_ = bv;
+	updateGL();
+}
+void MeshViewer::setDrawTargetMesh(bool bv)
+{
+	is_draw_target_mesh_ = bv;
+	updateGL();
+}
+
 void MeshViewer::setMeshInvisible()
 {
-	mesh_render_mode_ = MESH_HIDDEN;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setMeshRenderMode(MESH_HIDDEN);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setMeshRenderMode(MESH_HIDDEN);
 	updateGL();
 }
 void MeshViewer::setDrawMeshPointSet()
 {
-	mesh_render_mode_ = MESH_POINT_SET;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setMeshRenderMode(MESH_POINT_SET);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setMeshRenderMode(MESH_POINT_SET);
 	updateGL();
 }
 void MeshViewer::setDrawMeshWireFrame()
 {
-	mesh_render_mode_ = MESH_WIREFRAME;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setMeshRenderMode(MESH_WIREFRAME);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setMeshRenderMode(MESH_WIREFRAME);
 	updateGL();
 }
 void MeshViewer::setDrawMeshHiddenLines()
 {
-	mesh_render_mode_ = MESH_HIDDEN_LINES;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setMeshRenderMode(MESH_HIDDEN_LINES);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setMeshRenderMode(MESH_HIDDEN_LINES);
 	updateGL();
 }
 void MeshViewer::setDrawMeshFlatLines()
 {
-	mesh_render_mode_ = MESH_FLAT_LINES;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setMeshRenderMode(MESH_FLAT_LINES);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setMeshRenderMode(MESH_FLAT_LINES);
 	updateGL();
 }
 void MeshViewer::setDrawMeshSolidFlat()
 {
-	mesh_render_mode_ = MESH_SOLID_FLAT;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setMeshRenderMode(MESH_SOLID_FLAT);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setMeshRenderMode(MESH_SOLID_FLAT);
 	updateGL();
 }
 void MeshViewer::setDrawMeshSolidSmooth()
 {
-	mesh_render_mode_ = MESH_SOLID_SMOOTH;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setMeshRenderMode(MESH_SOLID_SMOOTH);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setMeshRenderMode(MESH_SOLID_SMOOTH);
 	updateGL();
 }
 
 void MeshViewer::setDrawMeshTexture(bool bv)
 {
-	if (!is_load_texture_)
-	{
-		logW("no texture image loaded yet.\n");
-		QMessageBox::information(this, tr("About"), "No texture image loaded yet.");
-		emit(setDrawTextureMode(false));
-		return;
-	}
-	is_draw_texture_ = bv;
+	//if (!is_load_texture_)
+	//{
+	//	logW("no texture image loaded yet.\n");
+	//	QMessageBox::information(this, tr("About"), "No texture image loaded yet.");
+	//	emit(setDrawTextureMode(false));
+	//	return;
+	//}
+	//is_draw_texture_ = bv;
 	updateGL();
 }
 
@@ -464,17 +486,80 @@ void MeshViewer::setDrawAxes()
 	is_draw_axes_ = !is_draw_axes_;
 	updateGL();
 }
+
+void MeshViewer::setColor()
+{
+	QColorDialog *palette = new QColorDialog(Qt::white, this);
+	if (palette->exec() == QDialog::Accepted)
+	{
+		QColor color = palette->currentColor();
+		OpenMesh::Vec3f c = OpenMesh::Vec3f(color.red() / 255.0, color.green() / 255.0, color.blue() / 255.0);
+		if (active_mesh_ == SOURCE_ACTIVE)
+		{
+			ptr_source_model_->setColor(c);
+			//emit(ptr_mainwindow_->setTargetLabelColor(color));
+			emit(updateSourceLabelColor(color));
+		}
+		else if (active_mesh_ == TARGET_ACTIVE)
+		{
+			ptr_target_model_->setColor(c);
+			emit(updateTargetLabelColor(color));
+		}
+	}
+	updateGL();
+}
+
 void MeshViewer::setDrawBBox()
 {
-	is_draw_bbox_ = !is_draw_bbox_;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setDrawBBox();
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setDrawBBox();
 	updateGL();
 }
 void MeshViewer::setDrawBoundary()
 {
-	is_draw_boundary_ = !is_draw_boundary_;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->setDrawBoundary();
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->setDrawBoundary();
 	updateGL();
 }
 
+void MeshViewer::setSourceMeshActive()
+{
+	active_mesh_ = SOURCE_ACTIVE;
+	emit(setRenderMode(ptr_source_model_->getMeshRenderMode()));
+	emit(setDrawBBox(ptr_source_model_->isDrawBBox()));
+	emit(setDrawBoundary(ptr_source_model_->isDrawBoundary()));
+	emit(setDrawTextureMode(ptr_source_model_->isDrawTexture()));
+	updateGL();
+}
+
+void MeshViewer::setTargetMeshActive()
+{
+	active_mesh_ = TARGET_ACTIVE;
+	emit(setRenderMode(ptr_target_model_->getMeshRenderMode()));
+	emit(setDrawBBox(ptr_target_model_->isDrawBBox()));
+	emit(setDrawBoundary(ptr_target_model_->isDrawBoundary()));
+	emit(setDrawTextureMode(ptr_target_model_->isDrawTexture()));
+	updateGL();
+}
+
+void MeshViewer::swapMesh()
+{
+	Swap(ptr_source_model_, ptr_target_model_);
+	emit(updateSourceLabelColor(ptr_source_model_->getColor()));
+	emit(setDrawBBox(ptr_source_model_->isDrawBBox()));
+	emit(setDrawBoundary(ptr_source_model_->isDrawBoundary()));
+	emit(setDrawTextureMode(ptr_source_model_->isDrawTexture()));
+
+	emit(setDrawBBox(ptr_target_model_->isDrawBBox()));
+	emit(setDrawBoundary(ptr_target_model_->isDrawBoundary()));
+	emit(updateTargetLabelColor(ptr_target_model_->getColor()));
+	emit(setDrawTextureMode(ptr_target_model_->isDrawTexture()));
+	updateGL();
+}
 
 void MeshViewer::showMeshInfo()
 {
@@ -516,20 +601,19 @@ void MeshViewer::showMeshInfo()
 
 
 	QString info;
-	if (is_load_mesh_)
+	if (active_mesh_ == SOURCE_ACTIVE)
 	{
-		info = QString(
-			"Vertices  %1 \n"
-			"Edges     %2 \n"
-			"Faces     %3 \n"
-			"Path      %4"
-		).arg(ptr_mesh_->n_vertices()).arg(ptr_mesh_->n_edges()).arg(ptr_mesh_->n_faces())
-			.arg(mesh_path_);
+		info = QString("Source mesh\n");
+		info += ptr_source_model_->getMeshInfo();
+	}
+	else if (active_mesh_ == TARGET_ACTIVE)
+	{
+		info = QString("Target mesh\n");
+		info += ptr_target_model_->getMeshInfo();
 	}
 	else
 		info = QString("No mesh loaded yet");
 	
-
 	QMessageBox::information(this, tr("MeshInfo"), info);
 }
 
@@ -542,12 +626,8 @@ void MeshViewer::setNoneSelectMode()
 }
 void MeshViewer::setVertSelectMode()
 {
-	if (!is_load_mesh_)
-	{
-		emit(setSelectMode(false));
-		QMessageBox::warning(this, tr("Warning"), "No mesh loaded yet!");
-		return;
-	}
+	if (!validSelectMode()) return;
+
 	if (getCurrentSelectMode() == SELECT_VERTEX)
 	{
 		setNoneSelectMode();
@@ -557,17 +637,12 @@ void MeshViewer::setVertSelectMode()
 		setSelectMode(SELECT_VERTEX);
 		setMouseMode(MOUSE_SELECT_MODE);
 	}
-		
 	updateGL();
 }
 void MeshViewer::setEdgeSelectMode()
 {
-	if (!is_load_mesh_)
-	{
-		emit(setSelectMode(false));
-		QMessageBox::warning(this, tr("Warning"), "No mesh loaded yet!");
-		return;
-	}
+	if (!validSelectMode()) return;
+
 	if (getCurrentSelectMode() == SELECT_EDGE)
 	{
 		setNoneSelectMode();
@@ -581,12 +656,8 @@ void MeshViewer::setEdgeSelectMode()
 }
 void MeshViewer::setFaceSelectMode()
 {
-	if (!is_load_mesh_)
-	{
-		emit(setSelectMode(false));
-		QMessageBox::warning(this, tr("Warning"), "No mesh loaded yet!");
-		return;
-	}
+	if (!validSelectMode()) return;
+
 	if (getCurrentSelectMode() == SELECT_FACE)
 	{
 		setNoneSelectMode();
@@ -601,43 +672,58 @@ void MeshViewer::setFaceSelectMode()
 
 void MeshViewer::setDrawSelectedVert(bool bv)
 {
-	ptr_selector_->showSelectedVert(bv);
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->showSelectedVert(bv);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->showSelectedVert(bv);
 	updateGL();
 }
 void MeshViewer::setDrawSelectedEdge(bool bv)
 {
-	ptr_selector_->showSelectedEdge(bv);
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->showSelectedEdge(bv);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->showSelectedEdge(bv);
 	updateGL();
 }
 void MeshViewer::setDrawSelectedFace(bool bv)
 {
-	ptr_selector_->showSelectedFace(bv);
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->showSelectedFace(bv);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->showSelectedFace(bv);
 	updateGL();
 }
 
 void MeshViewer::setDrawSelectedVertTag(bool bv)
 {
-	ptr_selector_->showSelectedVertTag(bv);
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->showSelectedVertTag(bv);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->showSelectedVertTag(bv);
 	updateGL();
 }
 void MeshViewer::setDrawSelectedEdgeTag(bool bv)
 {
-	ptr_selector_->showSelectedEdgeTag(bv);
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->showSelectedEdgeTag(bv);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->showSelectedEdgeTag(bv);
 	updateGL();
 }
 void MeshViewer::setDrawSelectedFaceTag(bool bv)
 {
-	ptr_selector_->showSelectedFaceTag(bv);
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->showSelectedFaceTag(bv);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->showSelectedFaceTag(bv);
 	updateGL();
 }
 
 void MeshViewer::selectVertByPos()
 {
-	if (!is_load_mesh_)
-	{
-		QMessageBox::warning(this, tr("Warning"), "No mesh loaded yet");
+	if (!validSelectMode()) 
 		return;
-	}
 
 	QDialog *window = new QDialog;
 	window->setWindowTitle("Select Closest Vertex");
@@ -687,22 +773,26 @@ void MeshViewer::selectVertByPos()
 			else
 				p[i] = lineEditPos[i]->text().toDouble();
 		}
-		ptr_selector_->findVertByPos(p);
+		if (active_mesh_ == SOURCE_ACTIVE)
+			ptr_source_model_->selector()->findVertByPos(p);
+		else if (active_mesh_ == TARGET_ACTIVE)
+			ptr_target_model_->selector()->findVertByPos(p);
 	}
 	updateGL();
 }
 void MeshViewer::selectVertByIdx()
 {
-	if (!is_load_mesh_)
-	{
-		QMessageBox::warning(this, tr("Warning"), "No mesh loaded yet");
-		return;
-	}
+	if (!validSelectMode()) return;
+
 	QDialog *window = new QDialog;
 	window->setWindowTitle("Select Vertex");
 
 	QSpinBox *spinBox = new QSpinBox();
-	spinBox->setRange(0, ptr_mesh_->n_vertices());  // 范围
+	if (active_mesh_ == SOURCE_ACTIVE)
+		spinBox->setRange(0, ptr_source_model_->vertNum());
+	else if (active_mesh_ == TARGET_ACTIVE)
+		spinBox->setRange(0, ptr_target_model_->vertNum());
+	
 	spinBox->setSingleStep(1);  // 步长
 	//spinBox->setSuffix("%");  // 前缀
 	//spinBox->setSpecialValueText(tr("Automatic"));  // 特殊文本值
@@ -735,17 +825,18 @@ void MeshViewer::selectVertByIdx()
 	
 	if (window->exec() == QDialog::Accepted)
 	{
-		ptr_selector_->findVertByIdx(spinBox->value());
+		if (active_mesh_ == SOURCE_ACTIVE)
+			ptr_source_model_->selector()->findVertByIdx(spinBox->value());
+		else if (active_mesh_ == TARGET_ACTIVE)
+			ptr_target_model_->selector()->findVertByIdx(spinBox->value());
 	}
 	updateGL();
 }
 void MeshViewer::selectEdgeByIdx()
 {
-	if (!is_load_mesh_)
-	{
-		QMessageBox::warning(this, tr("Warning"), "No mesh loaded yet");
-		return;
-	}
+
+	if (!validSelectMode()) return;
+
 
 	QDialog *window = new QDialog;
 	window->setWindowTitle("Select Edge");
@@ -754,7 +845,11 @@ void MeshViewer::selectEdgeByIdx()
 	label->setText("Edge Id");
 
 	QSpinBox *spinBox = new QSpinBox();
-	spinBox->setRange(0, ptr_mesh_->n_edges()); 
+	if (active_mesh_ == SOURCE_ACTIVE)
+		spinBox->setRange(0, ptr_source_model_->edgeNum());
+	else if (active_mesh_ == TARGET_ACTIVE)
+		spinBox->setRange(0, ptr_target_model_->edgeNum());
+
 	spinBox->setSingleStep(1);
 	spinBox->setValue(0); 
 	spinBox->setAlignment(Qt::AlignCenter);
@@ -777,23 +872,25 @@ void MeshViewer::selectEdgeByIdx()
 
 	if (window->exec() == QDialog::Accepted)
 	{
-		ptr_selector_->findEdgeByIdx(spinBox->value());
+		if (active_mesh_ == SOURCE_ACTIVE)
+			ptr_source_model_->selector()->findEdgeByIdx(spinBox->value());
+		else if (active_mesh_ == TARGET_ACTIVE)
+			ptr_target_model_->selector()->findEdgeByIdx(spinBox->value());
 	}
 	updateGL();
 }
 void MeshViewer::selectFaceByIdx()
 {
-	if (!is_load_mesh_)
-	{
-		QMessageBox::warning(this, tr("Warning"), "No mesh loaded yet");
-		return;
-	}
+	if (!validSelectMode()) return;
 
 	QDialog *window = new QDialog;
 	window->setWindowTitle("Select Face");
 
 	QSpinBox *spinBox = new QSpinBox();
-	spinBox->setRange(0, ptr_mesh_->n_faces());
+	if (active_mesh_ == SOURCE_ACTIVE)
+		spinBox->setRange(0, ptr_source_model_->faceNum());
+	else if (active_mesh_ == TARGET_ACTIVE)
+		spinBox->setRange(0, ptr_target_model_->faceNum());
 	spinBox->setSingleStep(1); 
 	spinBox->setValue(0);
 	spinBox->setAlignment(Qt::AlignCenter);
@@ -818,31 +915,65 @@ void MeshViewer::selectFaceByIdx()
 
 	if (window->exec() == QDialog::Accepted)
 	{
-		ptr_selector_->findFaceByIdx(spinBox->value());
+		if (active_mesh_ == SOURCE_ACTIVE)
+			ptr_source_model_->selector()->findFaceByIdx(spinBox->value());
+		else if (active_mesh_ == TARGET_ACTIVE)
+			ptr_target_model_->selector()->findFaceByIdx(spinBox->value());
 	}
 	updateGL();
 }
 
 void MeshViewer::clearAllSelection()
 {
-	ptr_selector_->clearSelectedVert();
-	ptr_selector_->clearSelectedEdge();
-	ptr_selector_->clearSelectedFace();
+	if (active_mesh_ == SOURCE_ACTIVE)
+	{
+		ptr_source_model_->selector()->clearSelectedVert();
+		ptr_source_model_->selector()->clearSelectedEdge();
+		ptr_source_model_->selector()->clearSelectedFace();
+	}
+	else if (active_mesh_ == TARGET_ACTIVE)
+	{
+		ptr_target_model_->selector()->clearSelectedVert();
+		ptr_target_model_->selector()->clearSelectedEdge();
+		ptr_target_model_->selector()->clearSelectedFace();
+	}
+		
 	updateGL();
 }
 void MeshViewer::clearVertSelection()
 {
-	ptr_selector_->clearSelectedVert();
+	if (active_mesh_ == SOURCE_ACTIVE)
+	{
+		ptr_source_model_->selector()->clearSelectedVert();
+	}
+	else if (active_mesh_ == TARGET_ACTIVE)
+	{
+		ptr_target_model_->selector()->clearSelectedVert();
+	}
 	updateGL();
 }
 void MeshViewer::clearEdgeSelection()
 {
-	ptr_selector_->clearSelectedEdge();
+	if (active_mesh_ == SOURCE_ACTIVE)
+	{
+		ptr_source_model_->selector()->clearSelectedEdge();
+	}
+	else if (active_mesh_ == TARGET_ACTIVE)
+	{
+		ptr_target_model_->selector()->clearSelectedEdge();
+	}
 	updateGL();
 }
 void MeshViewer::clearFaceSelection()
 {
-	ptr_selector_->clearSelectedFace();
+	if (active_mesh_ == SOURCE_ACTIVE)
+	{
+		ptr_source_model_->selector()->clearSelectedFace();
+	}
+	else if (active_mesh_ == TARGET_ACTIVE)
+	{
+		ptr_target_model_->selector()->clearSelectedFace();
+	}
 	updateGL();
 }
 
@@ -868,226 +999,49 @@ void MeshViewer::saveSelectedVert()
 	{
 		QMessageBox::information(this, "INFORMATION", "You clicked CANCEL button!");
 	}
-
-	ptr_selector_->saveSelectedVert("./selectedVert.txt");
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->saveSelectedVert("./selectedVert-src.txt");
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->saveSelectedVert("./selectedVert-tar.txt");
 
 }
 void MeshViewer::saveSelectedEdge()
 {
-	ptr_selector_->saveSelectedEdge("./selectedEdge.txt");
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->saveSelectedEdge("./selectedEdge-src.txt");
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->saveSelectedEdge("./selectedEdge-tar.txt");
 }
 void MeshViewer::saveSelectedFace()
 {
-	ptr_selector_->saveSelectedFace("./selectedFace.txt");
+	if (active_mesh_ == SOURCE_ACTIVE)
+		ptr_source_model_->selector()->saveSelectedFace("./selectedFace-src.txt");
+	else if (active_mesh_ == TARGET_ACTIVE)
+		ptr_target_model_->selector()->saveSelectedFace("./selectedFace-tar.txt");
 }
 
 void MeshViewer::render()
 {
-	drawSelection();
-	drawSelectionTag();
 
-	drawBBox();
-	drawBoundary();
 	drawAxes();
 
-	drawTexture();
-
-	drawMesh(mesh_render_mode_);
-}
-
-void MeshViewer::drawMesh(int drawmode)
-{
-	if (ptr_mesh_->n_vertices() == 0) { return; }
-
-	switch (drawmode)
+	if (is_draw_source_mesh_)
 	{
-	case MESH_HIDDEN:
-		break;
-	case MESH_POINT_SET:
-		glDisable(GL_LIGHTING);
-		drawMeshPointSet();
-		break;
-	case MESH_WIREFRAME:
-		glDisable(GL_LIGHTING);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		drawMeshWireFrame();
-		//draw_meshpointset();
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
-	case MESH_HIDDEN_LINES:
-		glDisable(GL_LIGHTING);
-		drawMeshHiddenLines();
-		break;
-	case MESH_SOLID_FLAT:
-		glEnable(GL_LIGHTING);
-		glShadeModel(GL_FLAT);
-		drawMeshSolidFlat();
-		//draw_meshpointset();
-		glDisable(GL_LIGHTING);
-		break;
-	case MESH_FLAT_LINES:
-		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(1.5f, 2.0f);
-		glEnable(GL_LIGHTING);
-		glShadeModel(GL_FLAT);
-		drawMeshSolidFlat();
-		glDisable(GL_POLYGON_OFFSET_FILL);
-		//draw_meshpointset();
-		glDisable(GL_LIGHTING);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		drawMeshWireFrame();
-		//draw_meshpointset();
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
-	case MESH_SOLID_SMOOTH:
-		glEnable(GL_LIGHTING);
-		glShadeModel(GL_SMOOTH);
-		drawMeshSolidSmooth();
-		//draw_meshpointset();
-		glDisable(GL_LIGHTING);
-		break;
-	default:
-		break;
+		ptr_source_model_->drawMesh();
+		ptr_source_model_->drawSelection();
+		if (active_mesh_ == SOURCE_ACTIVE) ptr_source_model_->drawSelectionTag(this);
+		ptr_source_model_->drawOthers();
 	}
-}
-void MeshViewer::drawMeshPointSet()
-{
-	glPolygonMode(GL_FRONT_AND_BACK, GL_POINTS);
-
-	glColor3f(0.0, 1.0, 1.0);
-	glPointSize(8);
-	MyMesh::VertexIter v_it = ptr_mesh_->vertices_begin();
-	glBegin(GL_POINTS);
-	for (v_it; v_it != ptr_mesh_->vertices_end(); ++v_it)
+	if (is_draw_target_mesh_)
 	{
-		glVertex3dv(ptr_mesh_->point(v_it).data());
-	}
-	glEnd();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
-void MeshViewer::drawMeshWireFrame()
-{
-	glLineWidth(1);
-	//glColor3f(0.753, 0.753, 0.753);
-	//glColor3f(0.0, 0.0, 0.0);
-	glColor3f(0.0, 0.0, 0.25);
-	//if(meshMode() != TRIANGLE && meshMode() != QUAD)
-	{
-		MyMesh::ConstFaceIter fIt(ptr_mesh_->faces_begin()),
-			fEnd(ptr_mesh_->faces_end());
-		MyMesh::ConstFaceVertexIter fvIt;
-		for (; fIt != fEnd; ++fIt)
-		{
-			//GL::glNormal(dualMesh.normal(f_it));
-			fvIt = ptr_mesh_->cfv_iter(fIt);
-			glBegin(GL_POLYGON);
-			for (fvIt; fvIt; ++fvIt)
-			{
-				glVertex3dv(ptr_mesh_->point(fvIt).data());
-			}
-			glEnd();
-		}
-	}
-}
-void MeshViewer::drawMeshHiddenLines()
-{
-	MyMesh::ConstFaceIter f_it(ptr_mesh_->faces_begin());
-	MyMesh::ConstFaceIter f_end(ptr_mesh_->faces_end());
-	MyMesh::ConstFaceVertexIter fv_it;
-	glLineWidth(2.0);
-	glColor3f(0.0, 1.0, 1.0);
-
-	glDrawBuffer(GL_NONE);
-	glDepthRange(0.01, 1.0);
-	glBegin(GL_TRIANGLES);
-	for (; f_it != f_end; ++f_it)
-	{
-		fv_it = ptr_mesh_->cfv_iter(f_it);
-		for (fv_it; fv_it; ++fv_it)
-		{
-			glVertex3dv(&ptr_mesh_->point(fv_it)[0]);
-		}
-
-	}
-	glEnd();
-
-
-	glDrawBuffer(GL_BACK);
-	glDepthRange(0.0, 1.0);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDepthFunc(GL_LEQUAL);
-
-	glBegin(GL_TRIANGLES);
-	for (f_it = ptr_mesh_->faces_begin(); f_it != f_end; ++f_it)
-	{
-		fv_it = ptr_mesh_->cfv_iter(f_it);
-		for (fv_it; fv_it; ++fv_it)
-		{
-			glVertex3dv(&ptr_mesh_->point(fv_it)[0]);
-		}
-	}
-	glEnd();
-
-	glDepthFunc(GL_LESS);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
-void MeshViewer::drawMeshSolidFlat()
-{
-	MyMesh::ConstFaceIter fIt(ptr_mesh_->faces_begin()),
-		fEnd(ptr_mesh_->faces_end());
-	MyMesh::ConstFaceVertexIter fvIt;
-
-	GLfloat mat_a[] = { 0.7f, 0.7f, 0.7f, 1.0f };
-	GLfloat mat_d[] = { 0.88f, 0.84f, 0.76f, 1.0f };
-	GLfloat mat_s[] = { 0.4f, 0.4f, 0.4f, 1.0f };
-	GLfloat shine[] = { 120.0f };
-
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_a);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_d);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_s);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shine);
-
-	glBegin(GL_TRIANGLES);
-	for (fIt; fIt != fEnd; ++fIt)
-	{
-		glNormal3dv(ptr_mesh_->normal(fIt).data());
-		fvIt = ptr_mesh_->cfv_iter(fIt.handle());
-		for (fvIt; fvIt; ++fvIt)
-		{
-			glVertex3dv(ptr_mesh_->point(fvIt).data());
-		}
-	}
-	glEnd();
-	//logI("draw mesh solid flat called\n");
-}
-void MeshViewer::drawMeshSolidSmooth()
-{
-	bool drawOK = false;
-	glLoadName(ptr_mesh_->n_vertices());
-
-	MyMesh::ConstFaceIter fIt(ptr_mesh_->faces_begin()),
-		fEnd(ptr_mesh_->faces_end());
-	MyMesh::ConstFaceVertexIter fvIt;
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_DOUBLE, 0, ptr_mesh_->points());
-	glEnableClientState(GL_NORMAL_ARRAY);
-	glNormalPointer(GL_DOUBLE, 0, ptr_mesh_->vertex_normals());
-
-	for (; fIt != fEnd; ++fIt)
-	{
-		glBegin(GL_POLYGON);
-		fvIt = ptr_mesh_->cfv_iter(fIt.handle());
-		for (fvIt; fvIt; --fvIt)
-		{
-			glArrayElement(fvIt.handle().idx());
-		}
-		glEnd();
+		ptr_target_model_->drawMesh();
+		ptr_target_model_->drawSelection();
+		if (active_mesh_ == TARGET_ACTIVE) ptr_target_model_->drawSelectionTag(this);
+		ptr_target_model_->drawOthers();
 	}
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
 }
+
 
 
 void MeshViewer::drawAxes()
@@ -1134,154 +1088,11 @@ void MeshViewer::drawAxes()
 
 	glColor3f(0.0, 0.0, 0.0);
 
-	renderTextStr(len + 0.1, 0, 0, "X", 1.0, 0.0, 0.0, 16);
-	renderTextStr(0, len + 0.1, 0, "Y", 0.0, 1.0, 0.0, 16);
-	renderTextStr(0, 0, len + 0.1, "Z", 0.0, 0.0, 1.0, 16);
-}
-void MeshViewer::drawBBox()
-{
-	if (!is_draw_bbox_) return;
-
-	OpenMesh::Vec3d temp0 = bbox_min_;
-	OpenMesh::Vec3d temp1;
-	glLineWidth(2.0);
-	glColor3f(1.0, 1.0, 0.0);
-	glBegin(GL_LINES);
-	temp1 = bbox_min_; temp1[0] = bbox_max_[0];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-	temp1 = bbox_min_; temp1[1] = bbox_max_[1];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-	temp1 = bbox_min_; temp1[2] = bbox_max_[2];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-
-	temp0 = bbox_min_; temp0[0] = bbox_max_[0];
-	temp1 = bbox_max_; temp1[1] = bbox_min_[1];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-
-	temp0 = bbox_min_; temp0[0] = bbox_max_[0];
-	temp1 = bbox_max_; temp1[2] = bbox_min_[2];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-
-	temp0 = bbox_min_; temp0[1] = bbox_max_[1];
-	temp1 = bbox_max_; temp1[2] = bbox_min_[2];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-
-	temp0 = bbox_min_; temp0[1] = bbox_max_[1];
-	temp1 = bbox_max_; temp1[0] = bbox_min_[0];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-
-	temp0 = bbox_min_; temp0[2] = bbox_max_[2];
-	temp1 = bbox_max_; temp1[1] = bbox_min_[1];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-
-	temp0 = bbox_min_; temp0[2] = bbox_max_[2];
-	temp1 = bbox_max_; temp1[0] = bbox_min_[0];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-
-	temp0 = bbox_max_;
-	temp1 = bbox_max_; temp1[0] = bbox_min_[0];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-	temp1 = bbox_max_; temp1[1] = bbox_min_[1];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-	temp1 = bbox_max_; temp1[2] = bbox_min_[2];
-	glVertex3dv(temp0.data());
-	glVertex3dv(temp1.data());
-	glEnd();
-
-
-	int prec = 4;
-	int width = 4;
-	QString texMin  = QString("min:  %1  %2  %3").arg(double(bbox_min_[0]), width, 'g', prec, QChar(' ')).arg(double(bbox_min_[1]), width, 'g', prec, QChar(' ')).arg(double(bbox_min_[2]), width, 'g', prec, QChar(' '));
-	QString texMax  = QString("max:  %1  %2  %3").arg(double(bbox_max_[0]), width, 'g', prec, QChar(' ')).arg(double(bbox_max_[1]), width, 'g', prec, QChar(' ')).arg(double(bbox_max_[2]), width, 'g', prec, QChar(' '));
-	QString texSize = QString("size: %1  %2  %3").arg(double(bbox_max_[0] - bbox_min_[0]), width, 'g', prec, QChar(' ')).arg(double(bbox_max_[1] - bbox_min_[1]), width, 'g', prec, QChar(' ')).arg(double(bbox_max_[2] - bbox_min_[2]), width, 'g', prec, QChar(' '));
-	renderTextStr(10, 20, texMin);
-	renderTextStr(10, 35, texMax);
-	renderTextStr(10, 50, texSize);
-}
-void MeshViewer::drawBoundary()
-{
-	if (!is_draw_boundary_) return;
-
-	glLineWidth(4.0);
-	glColor3f(1.0, 0.5, 0.0);
-	glBegin(GL_LINES);
-	for (MyMesh::EdgeIter e_it = ptr_mesh_->edges_begin(); e_it != ptr_mesh_->edges_end(); ++e_it)
-	{
-		if (ptr_mesh_->is_boundary(e_it))
-		{
-			MyMesh::HalfedgeHandle heh0 = ptr_mesh_->halfedge_handle(e_it, 0);
-			glVertex3dv(ptr_mesh_->point(ptr_mesh_->to_vertex_handle(heh0)).data());
-			glVertex3dv(ptr_mesh_->point(ptr_mesh_->from_vertex_handle(heh0)).data());
-		}
-	}
-	glEnd();
-}
-void MeshViewer::drawTexture()
-{
-	if (!is_draw_texture_)
-		return;
-	//if (ptr_mesh_->n_faces() == 0 || !is_load_texture_) return;
-#if 0
-	GLfloat mat_a[] = { 0.7f, 0.7f, 0.7f, 1.0f };
-	GLfloat mat_d[] = { 0.88f, 0.84f, 0.76f, 1.0f };
-	GLfloat mat_s[] = { 0.4f, 0.4f, 0.4f, 1.0f };
-	GLfloat shine[] = { 120.0f };
-
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_a);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_d);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_s);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shine);
-#endif
-
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_TEXTURE_2D);
-	glColor4f(1.0, 1.0, 1.0, 1.0);
-	glBindTexture(GL_TEXTURE_2D, texture_[0]);
-	
-	glBegin(GL_TRIANGLES);
-	for (auto face = ptr_mesh_->faces_begin(); face != ptr_mesh_->faces_end(); ++face)
-	{
-		for (auto it = ptr_mesh_->fv_begin(face); it != ptr_mesh_->fv_end(face); ++it)
-		{
-			auto vertex = it.handle();
-			OpenMesh::Vec2f tex = ptr_mesh_->texcoord2D(vertex);
-			glTexCoord2f(tex[0], tex[1]);
-			MyMesh::Normal normal = ptr_mesh_->normal(vertex);
-			glNormal3dv(normal.data());
-			auto point = ptr_mesh_->point(it.handle());
-			glVertex3dv(point.data());
-			//printf("tex %d = (%f, %f)\n", vertex.idx(), tex[0], tex[1]);
-		}
-	}
-	glEnd();
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_TEXTURE_2D);
-	
+	//renderTextStr(len + 0.1, 0, 0, "X", 1.0, 0.0, 0.0, 16);
+	//renderTextStr(0, len + 0.1, 0, "Y", 0.0, 1.0, 0.0, 16);
+	//renderTextStr(0, 0, len + 0.1, "Z", 0.0, 0.0, 1.0, 16);
 }
 
-void MeshViewer::drawSelection()
-{
-	ptr_selector_->drawSelectedVert();
-	ptr_selector_->drawSelectedEdge();
-	ptr_selector_->drawSelectedFace();
-}
-void MeshViewer::drawSelectionTag()
-{
-	ptr_selector_->drawSelectedVertTag(this);
-	ptr_selector_->drawSelectedEdgeTag(this);
-	ptr_selector_->drawSelectedFaceTag(this);
-}
 void MeshViewer::drawLegend(QPainter *painter)
 //void RenderingWidget::drawLegend()
 {
@@ -1315,6 +1126,23 @@ void MeshViewer::drawLegend(QPainter *painter)
 }
 
 
+bool MeshViewer::validSelectMode()
+{
+	if (active_mesh_ == SOURCE_ACTIVE && ptr_source_model_->emptyMesh())
+	{
+		emit(setSelectMode(false));
+		QMessageBox::warning(this, tr("Warning"), "Empty source mesh!");
+		return false;
+	}
+	else if (active_mesh_ == TARGET_ACTIVE && ptr_target_model_->emptyMesh())
+	{
+		emit(setSelectMode(false));
+		QMessageBox::warning(this, tr("Warning"), "Empty target mesh!");
+		return false;
+	}
+	return true;
+}
+
 void MeshViewer::loadMesh()
 {
 	//QString filename = QFileDialog::getOpenFileName(this, tr("Read Mesh"), "..", tr("Meshes (*.obj)"));
@@ -1327,13 +1155,34 @@ void MeshViewer::loadMesh()
 			"STL Files (*.stl);;"
 			"All Files (*)"));
 
-	if (filename.isEmpty())
+	bool flag = false;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		flag = ptr_source_model_->loadMesh(filename);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		flag = ptr_target_model_->loadMesh(filename);
+	else
+		flag = false;
+	if (flag)
+	{
+		emit(operatorInfo(QString("Load mesh from ") + filename + QString(" Done")));
+		//emit(meshInfo(ptr_mesh_->n_vertices(), ptr_mesh_->n_edges(), ptr_mesh_->n_faces()));
+		if (active_mesh_ == SOURCE_ACTIVE)
+		{
+			emit(setRenderMode(ptr_source_model_->getMeshRenderMode()));
+			emit(updateSourceLabelColor(ptr_source_model_->getColor()));
+		}
+		else if (active_mesh_ == TARGET_ACTIVE)
+		{
+			ptr_target_model_->setColor(OpenMesh::Vec3f(1.0, 0.0, 0.0));
+			emit(setRenderMode(ptr_target_model_->getMeshRenderMode()));
+			emit(updateTargetLabelColor(ptr_target_model_->getColor()));
+		}
+	}
+	else
 	{
 		emit(operatorInfo(QString("Failed to load mesh from ") + filename));
-		logE("failed to load mesh from '%s'\n", filename.toStdString());
-		return;
+		QMessageBox::warning(this, tr("Error"), QString("failed to load the mesh from %1").arg(filename));
 	}
-	loadMesh(filename);
 	updateGL();
 }
 void MeshViewer::loadTexture()
@@ -1342,13 +1191,24 @@ void MeshViewer::loadTexture()
 		tr("Load Texture"), 
 		"../mesh/", 
 		tr("Images(*.bmp *.jpg *.png *.jpeg)"));
-	if (filename.isEmpty())
+
+	bool flag = false;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		flag = ptr_source_model_->loadTexture(filename);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		flag = ptr_target_model_->loadTexture(filename);
+	else
+		flag = false;
+	if (flag)
+	{
+		emit(operatorInfo(QString("Load texture image from ") + filename + QString(" Done")));
+	}
+	else
 	{
 		emit(operatorInfo(QString("Failed to load texture image from ") + filename));
-		logE("failed to load texture image from '%s'\n", filename.toStdString());
+		QMessageBox::warning(this, tr("Error"), tr("failed to load texture image from %1").arg(filename.at(0)));
 		return;
 	}
-	loadTexture(filename);
 	updateGL();
 }
 void MeshViewer::saveMesh()
@@ -1363,17 +1223,24 @@ void MeshViewer::saveMesh()
 			"STL Files (*.stl);;"
 			"All Files (*)"));
 
-	OpenMesh::IO::Options opt_write = OpenMesh::IO::Options::Default;
-	//opt_write += OpenMesh::IO::Options::VertexNormal;
-	//opt_write += OpenMesh::IO::Options::VertexTexCoord;
-	if (filename.isEmpty() || !OpenMesh::IO::write_mesh(*ptr_mesh_, filename.toStdString(), opt_write, 6))
+	bool flag = false;
+	if (active_mesh_ == SOURCE_ACTIVE)
+		flag = ptr_source_model_->saveMesh(filename);
+	else if (active_mesh_ == TARGET_ACTIVE)
+		flag = ptr_target_model_->saveMesh(filename);
+	else
+		flag = false;
+	if (flag)
+	{
+		emit(operatorInfo(QString("Save mesh to ") + filename + QString(" Done")));
+	}
+	else
 	{
 		emit(operatorInfo(QString("Failed to save mesh to ") + filename));
-		logE("failed to save current mesh to '%s'\n", filename.toStdString());
+		QMessageBox::warning(this, tr("Error"), tr("failed to save mesh to %1").arg(filename.at(0)));
 		return;
 	}
-	emit(operatorInfo(QString("Save mesh to ") + filename + QString(" Done")));
-	logE("save current mesh to '%s'\n", filename.toStdString());
+	updateGL();
 }
 void MeshViewer::saveScreen()
 {
@@ -1389,7 +1256,7 @@ void MeshViewer::saveScreen()
 		logE("failed to save screen to '%s'\n", filename.toStdString());
 	}
 	emit(operatorInfo(QString("Save screen to ") + filename + QString(" Done")));
-	logE("save screen to '%s'\n", filename.toStdString());
+	logI("save screen to '%s'\n", filename.toStdString());
 }
 
 
@@ -1408,128 +1275,8 @@ void MeshViewer::about()
 	QMessageBox::information(this, tr("About"), info);
 }
 
-bool MeshViewer::loadMesh(QString filename)
-{
-	// Support for path containing Chinese characters
-	QTextCodec *code = QTextCodec::codecForName("gd18030");
-	QTextCodec::setCodecForLocale(code);
-	QByteArray byfilename = filename.toLocal8Bit();
-	OpenMesh::IO::Options opt_read = OpenMesh::IO::Options::Default;
-	opt_read += OpenMesh::IO::Options::VertexNormal;    ptr_mesh_->request_vertex_normals();
-	opt_read += OpenMesh::IO::Options::VertexTexCoord;  ptr_mesh_->request_vertex_texcoords2D();
-	ptr_mesh_->clear();
-	if (!OpenMesh::IO::read_mesh(*ptr_mesh_, byfilename.data(), opt_read))
-	{
-		emit(operatorInfo(QString("Failed to load mesh from ") + filename));
-		logE("failed to load mesh from '%s'\n", filename.toStdString());
-		QMessageBox::warning(this, tr("Error"), QString("failed to load the mesh from %1").arg(filename));
-		return false;
-	}
-	is_load_mesh_ = true;
-	mesh_path_ = filename;
-	initMesh();
 
-	ptr_selector_->setMesh(ptr_mesh_);
-	ptr_selector_->buildSearchTree();
 
-	emit(operatorInfo(QString("Load mesh from ") + filename + QString(" Done")));
-	emit(meshInfo(ptr_mesh_->n_vertices(), ptr_mesh_->n_edges(), ptr_mesh_->n_faces()));
-	emit(setRenderMode(mesh_render_mode_));
-	bool statusVN = opt_read.check(OpenMesh::IO::Options::VertexNormal);
-	bool statusVT = opt_read.check(OpenMesh::IO::Options::VertexTexCoord);
-	logI("succeed in loading a mesh with %s%s\n", (statusVN ? "[vertex normals]" : ""), (statusVT ? "[vertex uv coordinates]" : ""));
-	return true;
-}
-bool MeshViewer::loadTexture(QString filename)
-{
-	QImage tex, buf;
-	if (!buf.load(filename))
-	{
-		emit(operatorInfo(QString("Failed to load mesh from ") + filename));
-		logE("failed to load texture image from '%s'\n", filename.toStdString());
-		QMessageBox::warning(this, tr("Error"), tr("failed to load texture image from %1").arg(filename.at(0)));
-		return false;
-	}
-#if 0
-	QImage dummy(128, 128, QImage::Format_ARGB32);
-	dummy.fill(Qt::green);
-	buf = dummy;
-#endif
-	if (is_load_texture_)
-	{
-		glDeleteTextures(1, &texture_[0]);
-	}
-	tex = QGLWidget::convertToGLFormat(buf);
-	//创建纹理  
-	glGenTextures(1, &texture_[0]);
-	//使用来自位图数据生成的典型纹理，将纹理名字texture[0]绑定到纹理目标上  
-	glBindTexture(GL_TEXTURE_2D, texture_[0]);
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, tex.width(), tex.height(), 0,
-		GL_RGBA, GL_UNSIGNED_BYTE, tex.bits());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	is_load_texture_ = true;
-	emit(operatorInfo(QString("Load texture from ") + filename + QString(" Done")));
-	logI("succeed in loading a texture image from '%s'\n", filename.toStdString());
-	return true;
-}
-void MeshViewer::initMesh()
-{
-	ptr_mesh_->request_vertex_status();
-	ptr_mesh_->request_edge_status();
-	ptr_mesh_->request_face_status();
-
-	ptr_mesh_->request_face_normals();
-	ptr_mesh_->request_vertex_normals();
-
-	updateMeshBBox();
-	unifyMesh(2.f);
-
-	//updateMesh();
-	updateMeshNormal();
-	updateMeshBBox();
-}
-
-void MeshViewer::unifyMesh(float size)
-{
-	float scaleX = bbox_max_[0] - bbox_min_[0];
-	float scaleY = bbox_max_[1] - bbox_min_[1];
-	float scaleZ = bbox_max_[2] - bbox_min_[2];
-
-	float scaleMax;
-
-	if (scaleX < scaleY)
-	{
-		scaleMax = scaleY;
-	}
-	else
-	{
-		scaleMax = scaleX;
-	}
-	if (scaleMax < scaleZ)
-	{
-		scaleMax = scaleZ;
-	}
-	float scaleV = size / scaleMax;
-	MyMesh::Point centerPos((bbox_max_[0] + bbox_min_[0]) / 2.f, (bbox_max_[1] + bbox_min_[1]) / 2.f, (bbox_max_[2] + bbox_min_[2]) / 2.f);
-
-	for (auto it = ptr_mesh_->vertices_begin(); it != ptr_mesh_->vertices_end(); ++it)
-	{
-		auto vertex = it.handle();
-		ptr_mesh_->point(vertex) = (ptr_mesh_->point(vertex) - centerPos) * scaleV;
-
-	}
-}
-
-void MeshViewer::printMeshInfo()
-{
-	printf("BoundingBox:\nX : [ %f , %f ]\n", bbox_min_[0], bbox_max_[0]);
-	printf("Y : [ %f , %f ]\n", bbox_min_[1], bbox_max_[1]);
-	printf("Z : [ %f , %f ]\n", bbox_min_[2], bbox_max_[2]);
-	printf("Diag length of BBox : %f\n", (bbox_max_ - bbox_min_).norm());
-	
-}
 
 void MeshViewer::getSelectedPoint(double x, double y)
 {
@@ -1552,62 +1299,34 @@ void MeshViewer::getSelectedPoint(double x, double y)
 
 	//ptr_arcball_->printBallMatrix();
 	float* g2mMatrix = ptr_arcball_->GetBallMatrix();  // global2modelMatrix
-	selected_point_[0] = globalXYZ[0] * g2mMatrix[0] + globalXYZ[1] * g2mMatrix[1] + globalXYZ[2] * g2mMatrix[2];
-	selected_point_[1] = globalXYZ[0] * g2mMatrix[4] + globalXYZ[1] * g2mMatrix[5] + globalXYZ[2] * g2mMatrix[6];
-	selected_point_[2] = globalXYZ[0] * g2mMatrix[8] + globalXYZ[1] * g2mMatrix[9] + globalXYZ[2] * g2mMatrix[10];
+	current_3d_position_[0] = globalXYZ[0] * g2mMatrix[0] + globalXYZ[1] * g2mMatrix[1] + globalXYZ[2] * g2mMatrix[2];
+	current_3d_position_[1] = globalXYZ[0] * g2mMatrix[4] + globalXYZ[1] * g2mMatrix[5] + globalXYZ[2] * g2mMatrix[6];
+	current_3d_position_[2] = globalXYZ[0] * g2mMatrix[8] + globalXYZ[1] * g2mMatrix[9] + globalXYZ[2] * g2mMatrix[10];
 	
 }
 
-void MeshViewer::updateMesh()
+void MeshViewer::pickMeshElem()
 {
-	updateMeshNormal();
-	updateMeshBBox();
-	updateMeshCenter();
-}
-
-void MeshViewer::updateMeshNormal()
-{
-	ptr_mesh_->update_face_normals();
-	ptr_mesh_->update_vertex_normals();
-}
-
-void MeshViewer::updateMeshBBox()
-{
-	typedef MyMesh::Point Point;
-	MyMesh::VertexIter vIt = ptr_mesh_->vertices_begin();
-	MyMesh::VertexIter vEnd = ptr_mesh_->vertices_end();
-	bbox_min_ = bbox_max_ = OpenMesh::vector_cast<OpenMesh::Vec3d>(ptr_mesh_->point(vIt));
-
-	size_t count = 0;
-	for (; vIt != vEnd; ++vIt, ++count)
+	switch (mesh_select_mode_)
 	{
-		bbox_min_.minimize(OpenMesh::vector_cast<OpenMesh::Vec3d>(ptr_mesh_->point(vIt)));
-		bbox_max_.maximize(OpenMesh::vector_cast<OpenMesh::Vec3d>(ptr_mesh_->point(vIt)));
+	case SELECT_NONE:
+		break;
+	case SELECT_VERTEX:
+		if (active_mesh_ == SOURCE_ACTIVE)      ptr_source_model_->selector()->pickVert(current_3d_position_);
+		else if (active_mesh_ == TARGET_ACTIVE) ptr_target_model_->selector()->pickVert(current_3d_position_);
+		break;
+	case SELECT_EDGE:
+		if (active_mesh_ == SOURCE_ACTIVE)      ptr_source_model_->selector()->pickEdge(current_3d_position_);
+		else if (active_mesh_ == TARGET_ACTIVE) ptr_target_model_->selector()->pickEdge(current_3d_position_);
+		break;
+	case SELECT_FACE:
+		if (active_mesh_ == SOURCE_ACTIVE)      ptr_source_model_->selector()->pickFace(current_3d_position_);
+		else if (active_mesh_ == TARGET_ACTIVE) ptr_target_model_->selector()->pickFace(current_3d_position_);
+		break;
+	default:
+		break;
 	}
 }
 
-void MeshViewer::updateMeshCenter()
-{
-	MyMesh::EdgeIter e_it = ptr_mesh_->edges_begin();
-	MyMesh::EdgeIter e_end = ptr_mesh_->edges_end();
-	double aveLen = 0.0;   // average edge length
-	double maxLen = 0.0;   // max edge length
-	double minLen = ptr_mesh_->calc_edge_length(e_it);  // min edge length
-	double e_len = 0.0;
-	for (; e_it != e_end; ++e_it)
-	{
-		double e_len = ptr_mesh_->calc_edge_length(e_it);
-		if (e_len > maxLen)
-		{
-			maxLen = e_len;
-		}
-		else if (e_len < minLen)
-		{
-			minLen = e_len;
-		}
-		aveLen += e_len;
-	}
-	printf("Edge Length : Max : %f; Min : %f; AVG : %f\n", maxLen, minLen, aveLen / ptr_mesh_->n_edges());
-	printMeshInfo();
-}
+
 

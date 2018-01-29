@@ -13,12 +13,16 @@
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDockWidget>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHeaderView>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QRadioButton>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QWidget>
@@ -68,6 +72,7 @@ public:
     QAction *actionHidden;
     QAction *actionLoadTexture;
     QAction *actionResetArcBall;
+    QAction *actionSetColor;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menuFile;
@@ -86,7 +91,16 @@ public:
     QToolBar *toolBarSelection;
     QDockWidget *dockWidgetCommand;
     QWidget *dockWidgetContents;
-    QPushButton *pushButton;
+    QWidget *layoutWidget;
+    QGridLayout *gridLayout_2;
+    QGridLayout *gridLayout;
+    QLabel *labelSource;
+    QRadioButton *radioButtonActiveSource;
+    QCheckBox *checkBoxDrawSource;
+    QLabel *labelTarget;
+    QRadioButton *radioButtonActiveTarget;
+    QCheckBox *checkBoxDrawTarget;
+    QPushButton *pushButtonSwap;
 
     void setupUi(QMainWindow *MainWindowClass)
     {
@@ -287,6 +301,12 @@ public:
         actionLoadTexture->setObjectName(QStringLiteral("actionLoadTexture"));
         actionResetArcBall = new QAction(MainWindowClass);
         actionResetArcBall->setObjectName(QStringLiteral("actionResetArcBall"));
+        actionSetColor = new QAction(MainWindowClass);
+        actionSetColor->setObjectName(QStringLiteral("actionSetColor"));
+        actionSetColor->setCheckable(false);
+        QIcon icon30;
+        icon30.addFile(QStringLiteral(":/images/Resources/images/Color_Palette.png"), QSize(), QIcon::Normal, QIcon::Off);
+        actionSetColor->setIcon(icon30);
         centralWidget = new QWidget(MainWindowClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         MainWindowClass->setCentralWidget(centralWidget);
@@ -305,29 +325,29 @@ public:
         menuFind->setIcon(icon20);
         menu = new QMenu(menuTool);
         menu->setObjectName(QStringLiteral("menu"));
-        QIcon icon30;
-        icon30.addFile(QStringLiteral(":/images/Resources/images/saveSelection.png"), QSize(), QIcon::Normal, QIcon::Off);
-        menu->setIcon(icon30);
+        QIcon icon31;
+        icon31.addFile(QStringLiteral(":/images/Resources/images/saveSelection.png"), QSize(), QIcon::Normal, QIcon::Off);
+        menu->setIcon(icon31);
         menuPick = new QMenu(menuTool);
         menuPick->setObjectName(QStringLiteral("menuPick"));
-        QIcon icon31;
-        icon31.addFile(QStringLiteral(":/images/Resources/images/hand_up_pointing.png"), QSize(), QIcon::Normal, QIcon::Off);
-        menuPick->setIcon(icon31);
+        QIcon icon32;
+        icon32.addFile(QStringLiteral(":/images/Resources/images/hand_up_pointing.png"), QSize(), QIcon::Normal, QIcon::Off);
+        menuPick->setIcon(icon32);
         menuClear = new QMenu(menuTool);
         menuClear->setObjectName(QStringLiteral("menuClear"));
-        QIcon icon32;
-        icon32.addFile(QStringLiteral(":/images/Resources/images/broom.png"), QSize(), QIcon::Normal, QIcon::Off);
-        menuClear->setIcon(icon32);
+        QIcon icon33;
+        icon33.addFile(QStringLiteral(":/images/Resources/images/broom.png"), QSize(), QIcon::Normal, QIcon::Off);
+        menuClear->setIcon(icon33);
         menuShow = new QMenu(menuTool);
         menuShow->setObjectName(QStringLiteral("menuShow"));
-        QIcon icon33;
-        icon33.addFile(QStringLiteral(":/images/Resources/images/eye.png"), QSize(), QIcon::Normal, QIcon::Off);
-        menuShow->setIcon(icon33);
+        QIcon icon34;
+        icon34.addFile(QStringLiteral(":/images/Resources/images/eye.png"), QSize(), QIcon::Normal, QIcon::Off);
+        menuShow->setIcon(icon34);
         menuTag = new QMenu(menuTool);
         menuTag->setObjectName(QStringLiteral("menuTag"));
-        QIcon icon34;
-        icon34.addFile(QStringLiteral(":/images/Resources/images/tag.png"), QSize(), QIcon::Normal, QIcon::Off);
-        menuTag->setIcon(icon34);
+        QIcon icon35;
+        icon35.addFile(QStringLiteral(":/images/Resources/images/tag.png"), QSize(), QIcon::Normal, QIcon::Off);
+        menuTag->setIcon(icon35);
         menuHelp = new QMenu(menuBar);
         menuHelp->setObjectName(QStringLiteral("menuHelp"));
         MainWindowClass->setMenuBar(menuBar);
@@ -345,11 +365,66 @@ public:
         MainWindowClass->addToolBar(Qt::TopToolBarArea, toolBarSelection);
         dockWidgetCommand = new QDockWidget(MainWindowClass);
         dockWidgetCommand->setObjectName(QStringLiteral("dockWidgetCommand"));
+        dockWidgetCommand->setMinimumSize(QSize(93, 101));
+        dockWidgetCommand->setFloating(false);
         dockWidgetContents = new QWidget();
         dockWidgetContents->setObjectName(QStringLiteral("dockWidgetContents"));
-        pushButton = new QPushButton(dockWidgetContents);
-        pushButton->setObjectName(QStringLiteral("pushButton"));
-        pushButton->setGeometry(QRect(30, 20, 75, 23));
+        layoutWidget = new QWidget(dockWidgetContents);
+        layoutWidget->setObjectName(QStringLiteral("layoutWidget"));
+        layoutWidget->setGeometry(QRect(10, 10, 79, 65));
+        gridLayout_2 = new QGridLayout(layoutWidget);
+        gridLayout_2->setSpacing(6);
+        gridLayout_2->setContentsMargins(11, 11, 11, 11);
+        gridLayout_2->setObjectName(QStringLiteral("gridLayout_2"));
+        gridLayout_2->setContentsMargins(0, 0, 0, 0);
+        gridLayout = new QGridLayout();
+        gridLayout->setSpacing(6);
+        gridLayout->setObjectName(QStringLiteral("gridLayout"));
+        labelSource = new QLabel(layoutWidget);
+        labelSource->setObjectName(QStringLiteral("labelSource"));
+        labelSource->setAutoFillBackground(false);
+        labelSource->setMidLineWidth(1);
+        labelSource->setIndent(0);
+
+        gridLayout->addWidget(labelSource, 0, 0, 1, 1);
+
+        radioButtonActiveSource = new QRadioButton(layoutWidget);
+        radioButtonActiveSource->setObjectName(QStringLiteral("radioButtonActiveSource"));
+        radioButtonActiveSource->setChecked(true);
+
+        gridLayout->addWidget(radioButtonActiveSource, 0, 1, 1, 1);
+
+        checkBoxDrawSource = new QCheckBox(layoutWidget);
+        checkBoxDrawSource->setObjectName(QStringLiteral("checkBoxDrawSource"));
+        checkBoxDrawSource->setChecked(true);
+
+        gridLayout->addWidget(checkBoxDrawSource, 0, 2, 1, 1);
+
+        labelTarget = new QLabel(layoutWidget);
+        labelTarget->setObjectName(QStringLiteral("labelTarget"));
+        labelTarget->setIndent(1);
+
+        gridLayout->addWidget(labelTarget, 1, 0, 1, 1);
+
+        radioButtonActiveTarget = new QRadioButton(layoutWidget);
+        radioButtonActiveTarget->setObjectName(QStringLiteral("radioButtonActiveTarget"));
+
+        gridLayout->addWidget(radioButtonActiveTarget, 1, 1, 1, 1);
+
+        checkBoxDrawTarget = new QCheckBox(layoutWidget);
+        checkBoxDrawTarget->setObjectName(QStringLiteral("checkBoxDrawTarget"));
+        checkBoxDrawTarget->setChecked(true);
+
+        gridLayout->addWidget(checkBoxDrawTarget, 1, 2, 1, 1);
+
+
+        gridLayout_2->addLayout(gridLayout, 0, 0, 1, 1);
+
+        pushButtonSwap = new QPushButton(layoutWidget);
+        pushButtonSwap->setObjectName(QStringLiteral("pushButtonSwap"));
+
+        gridLayout_2->addWidget(pushButtonSwap, 1, 0, 1, 1);
+
         dockWidgetCommand->setWidget(dockWidgetContents);
         MainWindowClass->addDockWidget(static_cast<Qt::DockWidgetArea>(1), dockWidgetCommand);
 
@@ -372,13 +447,14 @@ public:
         menuView->addAction(actionSolidFlat);
         menuView->addAction(actionSolidSmooth);
         menuView->addSeparator();
-        menuView->addAction(actionBBox);
         menuView->addAction(actionAxis);
-        menuView->addAction(actionTexture);
+        menuView->addAction(actionBBox);
         menuView->addAction(actionBoundary);
+        menuView->addAction(actionTexture);
         menuView->addSeparator();
         menuView->addAction(actionMeshInfo);
         menuView->addAction(actionResetArcBall);
+        menuView->addAction(actionSetColor);
         menuTool->addAction(actionResetSelection);
         menuTool->addAction(menuPick->menuAction());
         menuTool->addAction(menuFind->menuAction());
@@ -410,6 +486,7 @@ public:
         toolBarFile->addAction(actionOpen);
         toolBarFile->addAction(actionSave);
         toolBarFile->addAction(actionSaveScreen);
+        toolBarMeshRenderMode->addAction(actionSetColor);
         toolBarMeshRenderMode->addAction(actionHidden);
         toolBarMeshRenderMode->addAction(actionPointSet);
         toolBarMeshRenderMode->addAction(actionWireFrame);
@@ -597,6 +674,7 @@ public:
 #ifndef QT_NO_STATUSTIP
         actionResetArcBall->setStatusTip(QApplication::translate("MainWindowClass", "Reset ArcBall", 0));
 #endif // QT_NO_STATUSTIP
+        actionSetColor->setText(QApplication::translate("MainWindowClass", "Color", 0));
         menuFile->setTitle(QApplication::translate("MainWindowClass", "&File", 0));
         menuView->setTitle(QApplication::translate("MainWindowClass", "View", 0));
         menuTool->setTitle(QApplication::translate("MainWindowClass", "Selection", 0));
@@ -611,7 +689,13 @@ public:
         toolBarMeshRenderMode->setWindowTitle(QApplication::translate("MainWindowClass", "toolBarRender", 0));
         toolBarSelection->setWindowTitle(QApplication::translate("MainWindowClass", "toolBarSelection", 0));
         dockWidgetCommand->setWindowTitle(QApplication::translate("MainWindowClass", "Command", 0));
-        pushButton->setText(QApplication::translate("MainWindowClass", "PushButton", 0));
+        labelSource->setText(QApplication::translate("MainWindowClass", "source", 0));
+        radioButtonActiveSource->setText(QString());
+        checkBoxDrawSource->setText(QString());
+        labelTarget->setText(QApplication::translate("MainWindowClass", "target", 0));
+        radioButtonActiveTarget->setText(QString());
+        checkBoxDrawTarget->setText(QString());
+        pushButtonSwap->setText(QApplication::translate("MainWindowClass", "Swap", 0));
     } // retranslateUi
 
 };

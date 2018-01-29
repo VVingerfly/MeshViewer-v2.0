@@ -1,6 +1,7 @@
 <RCC>
   <qresource prefix="MainWindow"/>
   <qresource prefix="images">
+    <file>Resources/images/Color_Palette.png</file>
     <file>Resources/images/eye_invisible.png</file>
     <file>Resources/images/saveScreen.png</file>
     <file>Resources/images/broom.png</file>

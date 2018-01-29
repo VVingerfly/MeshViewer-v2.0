@@ -47,13 +47,14 @@
     <addaction name="actionSolidFlat"/>
     <addaction name="actionSolidSmooth"/>
     <addaction name="separator"/>
-    <addaction name="actionBBox"/>
     <addaction name="actionAxis"/>
-    <addaction name="actionTexture"/>
+    <addaction name="actionBBox"/>
     <addaction name="actionBoundary"/>
+    <addaction name="actionTexture"/>
     <addaction name="separator"/>
     <addaction name="actionMeshInfo"/>
     <addaction name="actionResetArcBall"/>
+    <addaction name="actionSetColor"/>
    </widget>
    <widget class="QMenu" name="menuTool">
     <property name="title">
@@ -183,6 +184,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionSetColor"/>
    <addaction name="actionHidden"/>
    <addaction name="actionPointSet"/>
    <addaction name="actionWireFrame"/>
@@ -211,6 +213,15 @@
    <addaction name="actionPickFace"/>
   </widget>
   <widget class="QDockWidget" name="dockWidgetCommand">
+   <property name="minimumSize">
+    <size>
+     <width>93</width>
+     <height>101</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
    <property name="windowTitle">
     <string>Command</string>
    </property>
@@ -218,18 +229,91 @@
     <number>1</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
-       <x>30</x>
-       <y>20</y>
-       <width>75</width>
-       <height>23</height>
+       <x>10</x>
+       <y>10</y>
+       <width>79</width>
+       <height>65</height>
       </rect>
      </property>
-     <property name="text">
-      <string>PushButton</string>
-     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelSource">
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="midLineWidth">
+           <number>1</number>
+          </property>
+          <property name="text">
+           <string>source</string>
+          </property>
+          <property name="indent">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QRadioButton" name="radioButtonActiveSource">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QCheckBox" name="checkBoxDrawSource">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelTarget">
+          <property name="text">
+           <string>target</string>
+          </property>
+          <property name="indent">
+           <number>1</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QRadioButton" name="radioButtonActiveTarget">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QCheckBox" name="checkBoxDrawTarget">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="pushButtonSwap">
+        <property name="text">
+         <string>Swap</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </widget>
   </widget>
@@ -752,6 +836,18 @@
    </property>
    <property name="statusTip">
     <string>Reset ArcBall</string>
+   </property>
+  </action>
+  <action name="actionSetColor">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="mainwindow.qrc">
+     <normaloff>:/images/Resources/images/Color_Palette.png</normaloff>:/images/Resources/images/Color_Palette.png</iconset>
+   </property>
+   <property name="text">
+    <string>Color</string>
    </property>
   </action>
  </widget>

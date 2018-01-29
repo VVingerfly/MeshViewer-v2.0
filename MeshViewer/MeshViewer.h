@@ -9,30 +9,15 @@
 #define RENDERINGWIDGET_H
 
 #include "Common.h"
+#include "MeshModel.h"
 #include "MeshSelector.h"
 // Qt
 #include <QtWidgets/QtWidgets>
 #include <QtOpenGL/QGLWidget>
 #include <QEvent>
 
-
-#include <gl/GL.h>
-#include <gl/GLU.h>
-#include <gl/glut.h>
-
 class MainWindow;
 class CArcBall;
-
-enum MeshRenderMode
-{
-	MESH_HIDDEN = 0,
-	MESH_POINT_SET,
-	MESH_WIREFRAME,
-	MESH_HIDDEN_LINES,
-	MESH_FLAT_LINES,
-	MESH_SOLID_FLAT,
-	MESH_SOLID_SMOOTH
-};
 
 enum MeshSelectMode
 {
@@ -48,6 +33,11 @@ enum MouseActionMode
 	MOUSE_SELECT_MODE
 };
 
+enum CurrActiveMesh
+{
+	SOURCE_ACTIVE = 0,
+	TARGET_ACTIVE
+};
 
 class MeshViewer : public QGLWidget
 {
@@ -75,12 +65,14 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *e);
 	void mouseDoubleClickEvent(QMouseEvent *e);
 	void wheelEvent(QWheelEvent *e);
+
+	void keyPressEvent(QKeyEvent *e);
+	void keyReleaseEvent(QKeyEvent *e);
+
 	void dragEnterEvent(QDragEnterEvent *event);
 	void dropEvent(QDropEvent *event);
 
-public:
-	void keyPressEvent(QKeyEvent *e);
-	void keyReleaseEvent(QKeyEvent *e);
+
 
 signals:
 	void meshInfo(int, int, int);
@@ -88,6 +80,10 @@ signals:
 	void setSelectMode(bool bv);
 	void setRenderMode(MeshRenderMode mode);
 	void setDrawTextureMode(bool bv);
+	void setDrawBBox(bool bv);
+	void setDrawBoundary(bool bv);
+	void updateSourceLabelColor(QColor c);
+	void updateTargetLabelColor(QColor c);
 
 public slots:
 	void setBackground();
@@ -99,6 +95,8 @@ public slots:
 	void resetArcBall();
 	void about();
 
+	void setDrawSourceMesh(bool bv);
+	void setDrawTargetMesh(bool bv);
 	void setMeshInvisible();
 	void setDrawMeshPointSet();
 	void setDrawMeshWireFrame();
@@ -107,11 +105,15 @@ public slots:
 	void setDrawMeshSolidFlat();
 	void setDrawMeshSolidSmooth();
 	void setDrawMeshTexture(bool bv);
-	void setDrawAxes();
 	void setDrawBBox();
 	void setDrawBoundary();
 
+	void setDrawAxes();
+	void setColor();
 
+	void setSourceMeshActive();
+	void setTargetMeshActive();
+	void swapMesh();
 	void showMeshInfo();
 
 	void setNoneSelectMode();
@@ -138,12 +140,7 @@ public slots:
 	void saveSelectedEdge();
 	void saveSelectedFace();
 
-private:
 
-	void render();
-	void setDefaultLight();
-	void setDefaultMaterial();
-	void setDefaultViewAngle();
 public:
 	void renderTextStr(int x, int y, const QString& str)
 	{
@@ -167,36 +164,18 @@ public:
 	}
 
 private:
-	void drawMesh(int drawmode);
-	void drawMeshPointSet();
-	void drawMeshWireFrame();
-	void drawMeshHiddenLines();
-	void drawMeshSolidFlat();
-	void drawMeshSolidSmooth();
+	void render();
+	void setDefaultLight();
+	void setDefaultMaterial();
+	void setDefaultViewAngle();
 
 	void drawAxes();
-	void drawBBox();
-	void drawBoundary();
-	void drawTexture();
-
-	void drawSelection();
-	void drawSelectionTag();
-
 	void drawLegend(QPainter *painter);
-	//void drawLegend();
 
-private:
-	bool loadMesh(QString file);
-	bool loadTexture(QString file);
-	void initMesh();
-	void updateMesh();
-	void updateMeshNormal();
-	void updateMeshBBox();
-	void updateMeshCenter();
-	void unifyMesh(float size);
-	void printMeshInfo();
 	void getSelectedPoint(double x, double y);
+	void pickMeshElem();
 
+	bool validSelectMode();
 	MeshSelectMode getCurrentSelectMode() { return mesh_select_mode_; }
 	void setSelectMode(MeshSelectMode mode) { mesh_select_mode_ = mode; }
 	MouseActionMode getCurrentMouseMode() { return mouse_mode_; }
@@ -212,43 +191,39 @@ private:
 			QApplication::setOverrideCursor(Qt::PointingHandCursor);	
 		}
 		mouse_mode_ = mode; }
-	MeshRenderMode getCurrentRenderMode() { return mesh_render_mode_; }
-	void setMeshRenderMode(MeshRenderMode mode) { mesh_render_mode_ = mode; }
+
 
 public:
 	MainWindow					*ptr_mainwindow_;
 	CArcBall					*ptr_arcball_;
-	MyMesh                      *ptr_mesh_;
-	MeshSelector                *ptr_selector_;
 
-	OpenMesh::Vec3d				bbox_min_;
-	OpenMesh::Vec3d				bbox_max_;
-	MyMesh::Point				selected_point_;    // current selected 3D point
-	QPoint						current_position_;  // current cursor position
-	MeshRenderMode				mesh_render_mode_;
+	Model                       *ptr_source_model_;
+	Model                       *ptr_target_model_;
+
+	
+
+
+	CurrActiveMesh              active_mesh_;  // current active mesh
+
+	MyMesh::Point				current_3d_position_;  // current selected 3D point
+	QPoint						current_2d_position_;  // current cursor position
+
 	MeshSelectMode				mesh_select_mode_;
 	MouseActionMode             mouse_mode_;
 
-	QString						mesh_path_;
-
-	// Status info
-	bool						is_load_mesh_;
-	bool						is_load_texture_;
-	// Render information
-	bool						is_draw_axes_;
-	bool						is_draw_bbox_;
-	bool						is_draw_boundary_;
-	bool						is_draw_texture_;
-
-	// Texture
-	GLuint						texture_[1];
-	
-
+	bool is_draw_axes_        = false;
+	bool is_draw_source_mesh_ = true;
+	bool is_draw_target_mesh_ = true;
 	// eye
 	GLfloat						eye_distance_;
 	MyMesh::Point				eye_goal_;
 	MyMesh::Point               eye_direction_;
 
+#ifdef MESH_DEFORMER
+	MeshDeformer                *ptr_source_deformer_;
+
+#endif // MESH_DEFORMER
+	
 	
 };
 

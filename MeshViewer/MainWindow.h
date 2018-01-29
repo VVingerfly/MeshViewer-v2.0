@@ -25,20 +25,24 @@ public:
 private:
 	void CreateActionGroup();
 	void CreateAction();
-	void CreateActionView();
-	void CreateActionSelection();
 	void CreateStatusBar();
 
+	void createFile();
+	void createView();
+	void createSelection();
+	void createDeform();
 
 public slots:
 	void setRenderMode(MeshRenderMode mode);
 	void showMeshInfo(int npoint, int nedge, int nface);
+	void setSourceLabelColor(QColor c);
+	void setTargetLabelColor(QColor c);
 private:
 	Ui::MainWindowClass			ui;
 	MeshViewer				   *meshViewer_;
 
-	QLabel* label_meshinfo_;
-	QLabel *label_operatorinfo_;
+	QLabel					   *label_meshinfo_;
+	QLabel					   *label_operatorinfo_;
 };
 
 #endif // MAINWINDOW_H

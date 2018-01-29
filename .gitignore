@@ -16,6 +16,8 @@ mesh/
 icon/
 data/
 dat/
+./MeshViewer/Resources/
+TODO.md
 
 # User-specific files
 *.suo

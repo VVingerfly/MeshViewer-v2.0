@@ -102,7 +102,34 @@ typedef Eigen::Triplet<double> T;
 
 
 
+template<class object>
+void SafeDelete(object *ptr)
+{
+	if (ptr != NULL)
+	{
+		delete ptr;
+		ptr = NULL;
+	}
+}
 
+template<class object>
+void SafeDeletes(object *ptr)
+{
+	if (ptr != NULL)
+	{
+		delete[] ptr;
+		ptr = NULL;
+	}
+}
+
+
+template <class T> 
+void Swap(T& a, T& b)
+{
+	T c(a); 
+	a = b; 
+	b = c;
+}
 
 inline double triangleArea(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2, const Eigen::Vector3d &p3)
 {

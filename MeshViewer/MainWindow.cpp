@@ -46,7 +46,6 @@ MainWindow::~MainWindow()
 }
 
 
-
 void MainWindow::CreateActionGroup()
 {
 	QActionGroup *meshRenderGroup = new QActionGroup(this);
@@ -66,6 +65,33 @@ void MainWindow::CreateActionGroup()
 
 void MainWindow::CreateAction()
 {
+	//connect(meshViewer_, SIGNAL(operatorInfo(QString)), this->statusBar(), SLOT(showMessage(QString)));
+
+	createFile();
+	createView();
+	createSelection();
+	
+}
+
+
+void MainWindow::CreateStatusBar()
+{
+	label_meshinfo_ = new QLabel(QString(" V%1 E%2 F%3 ").arg(0).arg(0).arg(0));
+	label_meshinfo_->setAlignment(Qt::AlignCenter);
+	label_meshinfo_->setMinimumSize(label_meshinfo_->sizeHint());
+
+	label_operatorinfo_ = new QLabel();
+	label_operatorinfo_->setAlignment(Qt::AlignVCenter);
+
+	statusBar()->addWidget(label_meshinfo_);
+	connect(meshViewer_, SIGNAL(meshInfo(int, int, int)), this, SLOT(showMeshInfo(int, int, int)));
+
+	statusBar()->addWidget(label_operatorinfo_);
+	connect(meshViewer_, SIGNAL(operatorInfo(QString)), label_operatorinfo_, SLOT(setText(QString)));
+}
+
+void MainWindow::createFile()
+{
 	connect(ui.actionOpen, SIGNAL(triggered()), meshViewer_, SLOT(loadMesh()));
 	connect(ui.actionLoadTexture, SIGNAL(triggered()), meshViewer_, SLOT(loadTexture()));
 	connect(ui.actionSave, SIGNAL(triggered()), meshViewer_, SLOT(saveMesh()));
@@ -73,30 +99,17 @@ void MainWindow::CreateAction()
 	connect(ui.actionResetArcBall, SIGNAL(triggered()), meshViewer_, SLOT(resetArcBall()));
 
 	connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
-
 	connect(ui.actionAbout, SIGNAL(triggered()), meshViewer_, SLOT(about()));
-
-	//connect(meshViewer_, SIGNAL(operatorInfo(QString)), this->statusBar(), SLOT(showMessage(QString)));
-
-
-	CreateActionSelection();
-	CreateActionView();
-
-	
-	//connect(ui.radioButton_point, SIGNAL(clicked(bool)), renderingwidget_, SLOT(checkDrawPoint(bool)));
-	//ui.radioButton_point->setChecked(true);
-
-	//connect(ui.checkBox_point, SIGNAL(clicked(bool)), renderingwidget_, SLOT(checkDrawPoint(bool)));
-	//ui.checkBox_point->setChecked(true);
-	//connect(ui.checkBox_edge, SIGNAL(clicked(bool)), renderingwidget_, SLOT(checkDrawEdge(bool)));
-//	connect(ui.checkBox_face, SIGNAL(clicked(bool)), renderingwidget_, SLOT(checkDrawFace(bool)));
-//	connect(ui.checkBox_light, SIGNAL(clicked(bool)), renderingwidget_, SLOT(checkLight(bool)));
-//	connect(ui.checkBox_texture, SIGNAL(clicked(bool)), renderingwidget_, SLOT(checkDrawTexture(bool)));
-
 }
 
-void MainWindow::CreateActionView()
+void MainWindow::createView()
 {
+	connect(ui.checkBoxDrawSource, SIGNAL(clicked(bool)), meshViewer_, SLOT(setDrawSourceMesh(bool)));
+	connect(ui.checkBoxDrawTarget, SIGNAL(clicked(bool)), meshViewer_, SLOT(setDrawTargetMesh(bool)));
+	connect(ui.radioButtonActiveSource, SIGNAL(clicked()), meshViewer_, SLOT(setSourceMeshActive()));
+	connect(ui.radioButtonActiveTarget, SIGNAL(clicked()), meshViewer_, SLOT(setTargetMeshActive()));
+	connect(ui.pushButtonSwap, SIGNAL(clicked()), meshViewer_, SLOT(swapMesh()));
+
 	connect(meshViewer_, SIGNAL(setRenderMode(MeshRenderMode)), this, SLOT(setRenderMode(MeshRenderMode)));
 	connect(ui.actionHidden, SIGNAL(triggered()), meshViewer_, SLOT(setMeshInvisible()));
 	connect(ui.actionPointSet, SIGNAL(triggered()), meshViewer_, SLOT(setDrawMeshPointSet()));
@@ -108,6 +121,8 @@ void MainWindow::CreateActionView()
 
 	connect(ui.actionTexture, SIGNAL(triggered(bool)), meshViewer_, SLOT(setDrawMeshTexture(bool)));
 	connect(meshViewer_, SIGNAL(setDrawTextureMode(bool)), this->ui.actionTexture, SLOT(setChecked(bool)));
+	connect(meshViewer_, SIGNAL(setDrawBBox(bool)), this->ui.actionBBox, SLOT(setChecked(bool)));
+	connect(meshViewer_, SIGNAL(setDrawBoundary(bool)), this->ui.actionBoundary, SLOT(setChecked(bool)));
 
 	connect(ui.actionAxis, SIGNAL(triggered()), meshViewer_, SLOT(setDrawAxes()));
 	connect(ui.actionBBox, SIGNAL(triggered()), meshViewer_, SLOT(setDrawBBox()));
@@ -116,9 +131,13 @@ void MainWindow::CreateActionView()
 
 	connect(ui.actionMeshInfo, SIGNAL(triggered()), meshViewer_, SLOT(showMeshInfo()));
 
+	connect(ui.actionSetColor, SIGNAL(triggered()), meshViewer_, SLOT(setColor()));
+	
+	connect(meshViewer_, SIGNAL(updateSourceLabelColor(QColor)), this, SLOT(setSourceLabelColor(QColor)));
+	connect(meshViewer_, SIGNAL(updateTargetLabelColor(QColor)), this, SLOT(setTargetLabelColor(QColor)));
 }
 
-void MainWindow::CreateActionSelection()
+void MainWindow::createSelection()
 {
 	connect(ui.actionResetSelection, SIGNAL(triggered()), meshViewer_, SLOT(setNoneSelectMode()));
 
@@ -150,24 +169,8 @@ void MainWindow::CreateActionSelection()
 	connect(ui.actionTagSelectedVert, SIGNAL(triggered(bool)), meshViewer_, SLOT(setDrawSelectedVertTag(bool)));
 	connect(ui.actionTagSelectedEdge, SIGNAL(triggered(bool)), meshViewer_, SLOT(setDrawSelectedEdgeTag(bool)));
 	connect(ui.actionTagSelectedFace, SIGNAL(triggered(bool)), meshViewer_, SLOT(setDrawSelectedFaceTag(bool)));
-
 }
 
-void MainWindow::CreateStatusBar()
-{
-	label_meshinfo_ = new QLabel(QString(" V%1 E%2 F%3 ").arg(0).arg(0).arg(0));
-	label_meshinfo_->setAlignment(Qt::AlignCenter);
-	label_meshinfo_->setMinimumSize(label_meshinfo_->sizeHint());
-
-	label_operatorinfo_ = new QLabel();
-	label_operatorinfo_->setAlignment(Qt::AlignVCenter);
-
-	statusBar()->addWidget(label_meshinfo_);
-	connect(meshViewer_, SIGNAL(meshInfo(int, int, int)), this, SLOT(showMeshInfo(int, int, int)));
-
-	statusBar()->addWidget(label_operatorinfo_);
-	connect(meshViewer_, SIGNAL(operatorInfo(QString)), label_operatorinfo_, SLOT(setText(QString)));
-}
 
 void MainWindow::setRenderMode(MeshRenderMode mode)
 {
@@ -202,4 +205,26 @@ void MainWindow::setRenderMode(MeshRenderMode mode)
 void MainWindow::showMeshInfo(int npoint, int nedge, int nface)
 {
 	label_meshinfo_->setText(QString(" V%1 E%2 F%3 ").arg(npoint).arg(nedge).arg(nface));
+}
+
+void MainWindow::setSourceLabelColor(QColor c)
+{	
+#if 0
+	QPalette pl;
+	pl.setColor(QPalette::WindowText, c);
+	ui.labelSource->setPalette(pl);
+#else
+	ui.labelSource->setStyleSheet(QString("background-color:rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg(c.blue()));
+#endif
+}
+
+void MainWindow::setTargetLabelColor(QColor c)
+{
+#if 0
+	QPalette pl;
+	pl.setColor(QPalette::WindowText, c);
+	ui.labelTarget->setPalette(pl);
+#else
+	ui.labelTarget->setStyleSheet(QString("background-color:rgb(%1,%2,%3)").arg(c.red()).arg(c.green()).arg(c.blue()));
+#endif
 }
