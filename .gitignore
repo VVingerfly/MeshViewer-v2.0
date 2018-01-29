@@ -10,13 +10,15 @@ inc/
 # Library files
 lib/
 libs/
+*.dll
+*.lib
 
 # Data files
 mesh/
 icon/
 data/
 dat/
-./MeshViewer/Resources/
+MeshViewer/Resources/
 TODO.md
 
 # User-specific files
