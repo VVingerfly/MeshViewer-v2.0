@@ -5,13 +5,23 @@
 // Summary      :
 //===============================================================
 
-#include "mainwindow.h"
+#include <QtGlobal>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QtWidgets>
 
-int main(int argc, char *argv[])
+#include "MainWindow.h"
+
+int main(int argc, char* argv[])
 {
-	QApplication a(argc, argv);
-	MainWindow w;
-	w.show();
-	return a.exec();
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling, true);
+    QApplication a(argc, argv);
+
+    QT_REQUIRE_VERSION(argc, argv, "5.6.0");
+    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps, true);  //解决Qt在Retina屏幕上图片模糊问题
+    int ratio = QApplication::desktop()->screen()->devicePixelRatio();
+    // std::cout << ratio << std::endl;
+
+    MainWindow w;
+    w.show();
+    return a.exec();
 }

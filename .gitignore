@@ -4,8 +4,11 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # Include Files
-include/
-inc/
+# include/
+# inc/
+build
+build*
+
 
 # Library files
 lib/
@@ -14,12 +17,12 @@ libs/
 *.lib
 
 # Data files
-mesh/
-icon/
-data/
-dat/
-MeshViewer/Resources/
-TODO.md
+# mesh/
+# icon/
+# data/
+# dat/
+# MeshViewer/Resources/
+# TODO.md
 
 # User-specific files
 *.suo

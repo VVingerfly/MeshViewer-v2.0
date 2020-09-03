@@ -1,0 +1,85 @@
+# clang-format configuration file. Intended for clang-format >= 4.
+#
+---
+BasedOnStyle: Google
+Language:     Cpp
+Standard:     Cpp11
+
+DisableFormat: false
+
+AccessModifierOffset: -4
+AlignAfterOpenBracket:	Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlinesLeft: true
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: true
+AlwaysBreakBeforeMultilineStrings: false
+BinPackArguments: true
+BinPackParameters: true
+BreakBeforeBinaryOperators: false
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializersBeforeComma: true
+ColumnLimit: 200
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth:	4
+Cpp11BracedListStyle: false
+DerivePointerBinding: false
+ExperimentalAutoDetectBinPacking: false
+ForEachMacros:	[ foreach, Q_FOREACH, BOOST_FOREACH ]
+
+IndentCaseLabels: true
+IndentWidth: 4
+IndentWrappedFunctionNames:	false
+IndentFunctionDeclarationAfterType: false
+IndentPPDirectives: AfterHash
+
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: None
+ObjCSpaceBeforeProtocolList: true
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 60
+PenaltyBreakString: 1
+PenaltyBreakFirstLessLess: 1000
+PenaltyExcessCharacter: 1000
+PenaltyReturnTypeOnItsOwnLine: 90
+PointerAlignment: Left
+PointerBindsToType: true
+
+SpacesInParentheses: false
+SpacesInAngles: false
+SpacesInSquareBrackets:	false
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: false
+SpaceAfterControlStatementKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpacesBeforeTrailingComments: 2
+
+SortIncludes: true
+TabWidth: 4
+UseTab: Never
+
+# Configure each individual brace in BraceWrapping
+BreakBeforeBraces: Custom
+
+# Control of individual brace wrapping cases
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: false
+  AfterStruct: true
+  AfterUnion: false
+  #AfterExternBlock: false # Unknown to clang-format-5.0
+  BeforeCatch: false
+  BeforeElse: true
+  IndentBraces: false
+...

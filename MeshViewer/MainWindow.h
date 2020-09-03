@@ -9,40 +9,44 @@
 #define MAINWINDOW_H
 
 #include <QtWidgets/QMainWindow>
-#include "ui_mainwindow.h"
+
 #include "MeshViewer.h"
+#include "ui_mainwindow.h"
 
 class MeshViewer;
 
+
 class MainWindow : public QMainWindow
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	MainWindow(QWidget *parent = 0);
-	~MainWindow();
+    MainWindow(QWidget* parent = 0);
+    ~MainWindow();
 
 private:
-	void CreateActionGroup();
-	void CreateAction();
-	void CreateStatusBar();
+    void CreateActionGroup();
+    void CreateAction();
+    void CreateStatusBar();
 
-	void createFile();
-	void createView();
-	void createSelection();
-	void createDeform();
+    void createFile();
+    void createView();
+    void createSelection();
+    void createDeform();
 
 public slots:
-	void setRenderMode(MeshRenderMode mode);
-	void showMeshInfo(int npoint, int nedge, int nface);
-	void setSourceLabelColor(QColor c);
-	void setTargetLabelColor(QColor c);
-private:
-	Ui::MainWindowClass			ui;
-	MeshViewer				   *meshViewer_;
+    void setRenderMode(MeshRenderMode mode);
+    void showMeshInfo(int npoint, int nedge, int nface);
+    void setSourceLabelColor(QColor c);
+    void setTargetLabelColor(QColor c);
 
-	QLabel					   *label_meshinfo_;
-	QLabel					   *label_operatorinfo_;
+private:
+    Ui::MainWindowClass ui;
+
+    MeshViewer* meshViewer_;
+
+    QLabel* label_meshinfo_;
+    QLabel* label_operatorinfo_;
 };
 
-#endif // MAINWINDOW_H
+#endif  // MAINWINDOW_H
